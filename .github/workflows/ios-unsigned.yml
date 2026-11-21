@@ -1,4 +1,4 @@
-name: ios-unsigned-ipa
+﻿name: ios-unsigned-ipa
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -61,3 +61,4 @@ jobs:
           name: DSBot-unsigned-ipa
           path: mobile/ios/build/DSBot-unsigned.ipa
           if-no-files-found: error
+
