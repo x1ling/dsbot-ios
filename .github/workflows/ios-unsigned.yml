@@ -1,0 +1,63 @@
+name: ios-unsigned-ipa
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install link dependencies
+        working-directory: link
+        run: npm ci --no-audit --no-fund
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate the iOS project
+        working-directory: mobile
+        run: npx expo prebuild --platform ios --no-install
+
+      - name: Install CocoaPods
+        working-directory: mobile/ios
+        run: pod install --repo-update
+
+      - name: Archive without code signing
+        working-directory: mobile/ios
+        run: |
+          set -o pipefail
+          xcodebuild -workspace DSBot.xcworkspace -scheme DSBot -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath build/DSBot.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" PROVISIONING_PROFILE_SPECIFIER="" \
+            archive
+
+      - name: Package unsigned IPA
+        working-directory: mobile/ios
+        run: |
+          set -e
+          APP=$(ls -d build/DSBot.xcarchive/Products/Applications/*.app | head -1)
+          echo "app=$APP"
+          rm -rf build/Payload build/DSBot-unsigned.ipa
+          mkdir -p build/Payload
+          cp -R "$APP" build/Payload/
+          cd build
+          zip -qry DSBot-unsigned.ipa Payload
+          ls -lh DSBot-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DSBot-unsigned-ipa
+          path: mobile/ios/build/DSBot-unsigned.ipa
+          if-no-files-found: error
