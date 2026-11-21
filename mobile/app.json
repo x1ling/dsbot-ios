@@ -1,4 +1,4 @@
-{
+﻿{
   "expo": {
     "name": "DS Bot",
     "slug": "dsbot",
@@ -16,7 +16,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "io.github.fei2411.dsbot",
+      "bundleIdentifier": "com.x1ling.dsbot",
       "infoPlist": {
         "CFBundleLocalizations": ["en", "zh-Hans"],
         "ITSAppUsesNonExemptEncryption": false
@@ -30,7 +30,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "io.github.fei2411.dsbot",
+      "package": "com.x1ling.dsbot",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
       ]
@@ -60,3 +60,4 @@
     ]
   }
 }
+
