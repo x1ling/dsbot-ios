@@ -836,11 +836,41 @@ export function Plugins({ navigation }: any) {
   const { call } = useTeam()
   const [items, setItems] = useState<{ name: string; version: string; bundle?: boolean }[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [detail, setDetail] = useState<any | null>(null)
   const load = () => {
     setError(null)
     void call('plugins', {}).then((value: any) => setItems(Array.isArray(value?.items) ? value.items : []), (failure: { message?: string }) => setError(failure?.message ?? String(failure)))
   }
+  const open = (name: string) => {
+    setDetail({ name, loading: true })
+    void call('plugin-detail', { name }).then(
+      (value: any) => setDetail({ ...value, loading: false }),
+      (failure: { message?: string }) => setDetail({ name, loading: false, error: failure?.message ?? String(failure) }),
+    )
+  }
   useEffect(load, [])
+  if (detail !== null) {
+    return (
+      <Screen><Back title={detail.name ?? t('Plugins')} onBack={() => setDetail(null)} />
+        <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 48 }}>
+          {detail.loading === true ? <Text style={[typeScale.small, { color: p.ink3 }]}>{t('Loading…')}</Text> : null}
+          {detail.error !== undefined ? <Text style={[typeScale.small, { color: p.danger }]}>{detail.error}</Text> : null}
+          {detail.loading !== true && detail.error === undefined ? (
+            <View>
+              {detail.description ? <Text style={[typeScale.settingsRow, { color: p.ink }]}>{detail.description}</Text> : null}
+              <Text style={[typeScale.small, { color: p.ink3, marginTop: 8 }]}>
+                {[detail.name, detail.version, detail.author, detail.license].filter((part: string) => !!part).join(' · ')}
+              </Text>
+              <View style={{ height: 16 }} />
+              <Text style={{ fontFamily: 'monospace', fontSize: 13, lineHeight: 19, color: p.ink2 }}>
+                {detail.readme && String(detail.readme).trim() !== '' ? detail.readme : t('No README')}
+              </Text>
+            </View>
+          ) : null}
+        </ScrollView>
+      </Screen>
+    )
+  }
   return (
     <Screen><Back title={t('Plugins')} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
@@ -850,7 +880,7 @@ export function Plugins({ navigation }: any) {
         {items !== null && items.length > 0 ? (
           <Section label={t('{count} plugins', { count: items.length })}>
             {items.map(item => (
-              <Row key={item.name} label={item.name} value={item.version} hint={item.bundle === false ? t('Installed, not active') : undefined} />
+              <Row key={item.name} label={item.name} value={item.version} hint={item.bundle === false ? t('Installed, not active') : undefined} onPress={() => open(item.name)} />
             ))}
           </Section>
         ) : null}

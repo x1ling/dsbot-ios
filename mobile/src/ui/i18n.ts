@@ -228,6 +228,7 @@ const MOBILE_ZH: Record<string, string> = {
   'Submit': '提交',
   'Stop': '停止',
   'Plugins': '插件',
+  'No README': '这个插件没有附带 README，作者没写说明。',
   'Refresh': '刷新',
   'Loading…': '加载中…',
   'No plugins installed': '还没有安装插件',
