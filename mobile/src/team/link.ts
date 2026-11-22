@@ -4,8 +4,10 @@ import type { RpcClient } from '../../../link/src/index.ts'
 import { callBot, callBotState, openLink, type TeamState } from '../connection.ts'
 import { ensureUnlock } from './gate'
 import { createNoticeCursor, type NoticeCursorAnswer } from './notices.ts'
+import { bumpRecency } from './recency.ts'
 import { OPTIMISTIC, optimistic, withWrites, type Write } from './optimistic.ts'
 import { t } from '../ui/i18n.ts'
+import { workPhrase } from '../ui/phrases.ts'
 import type { PhoneIdentity, SavedComputer } from '../store.ts'
 import { showDoneActivity, showRunningActivity } from './live.ts'
 import { askNotifications, notifyDone } from './notify.ts'
@@ -65,6 +67,8 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
   // the first full read only seeds the set (old history must stay quiet).
   const finishedTasks = useRef<Set<string> | null>(null)
   const runningTasks = useRef<Set<string> | null>(null)
+  // The step each running Bot is on, so the island can follow it as it moves.
+  const runningPhrase = useRef<Map<string, string> | null>(null)
   const pollRef = useRef<() => void>(() => {})
   const feedHandlers = useRef(new Set<FeedHandler>())
   const hostRef = useRef(computer.hostDeviceId)
@@ -148,6 +152,21 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
       for (const bot of next.bots ?? []) {
         const task = (bot.tasks ?? []).find(entry => (entry.status === 'running' || entry.status === 'pending') && !seenWorking.has(entry.id))
         if (task !== undefined) { void showRunningActivity(bot.name, task.title); break }
+      }
+    }
+    // Follow the step: every time the Bot's work phrase changes (thinking, running a
+    // command, writing a file...), the live activity's subtitle moves with it.
+    const phrases = new Map<string, string>()
+    for (const [botId, doing] of Object.entries((next.work?.bots ?? {}) as Record<string, never>)) {
+      phrases.set(botId, workPhrase(doing as never))
+    }
+    const wasPhrase = runningPhrase.current
+    runningPhrase.current = phrases
+    if (wasPhrase !== null) {
+      for (const [botId, phrase] of phrases) {
+        if (wasPhrase.get(botId) === phrase) continue
+        const bot = (next.bots ?? []).find(entry => entry.id === botId)
+        if (bot !== undefined) void showRunningActivity(bot.name, phrase)
       }
     }
     setTeam(prev => {
@@ -290,7 +309,11 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
         const { sameBoot, since } = noticeCursor.connect(helloResult)
         client.onEvent(({ event, data }: { event: string; data: any }) => {
           if (stopped || clientRef.current !== client) return
-          if (event === 'notice' && !noticeCursor.acceptLive(helloResult.boot, data)) return
+          if (event === 'notice') {
+            if (!noticeCursor.acceptLive(helloResult.boot, data)) return
+            const seen = data as { botId?: string; roomId?: string; time?: number }
+            bumpRecency(seen.botId ?? seen.roomId, typeof seen.time === 'number' ? seen.time : Date.now())
+          }
           if (event === 'revision' || event === 'live') void poll()
           for (const handler of feedHandlers.current) handler(event, data)
         })
@@ -301,6 +324,8 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
           else {
             if (replay.length > 0) void poll()
             for (const entry of replay) {
+              const seen = entry as { botId?: string; roomId?: string; time?: number }
+              bumpRecency(seen.botId ?? seen.roomId, typeof seen.time === 'number' ? seen.time : Date.now())
               for (const handler of feedHandlers.current) handler('notice', entry)
             }
           }
