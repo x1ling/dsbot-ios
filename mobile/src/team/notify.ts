@@ -1,15 +1,36 @@
-import * as Notifications from 'expo-notifications'
+import { Platform } from 'react-native'
+import { loadDraft, saveDraft, clearDraft } from './draft'
 
-// A finished Bot has to reach the phone even when the app is not on screen.
-// These are local notifications: no APNs certificate, no developer account.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-})
+// Local notifications are wired through expo-notifications only when the native
+// module is present in the build. The app must keep running on builds without it.
+type NotificationsModule = {
+  setNotificationHandler: (h: unknown) => void
+  getPermissionsAsync: () => Promise<{ status: string }>
+  requestPermissionsAsync: () => Promise<{ status: string }>
+  scheduleNotificationAsync: (r: unknown) => Promise<string>
+}
+
+let mod: NotificationsModule | null | undefined
+
+async function load(): Promise<NotificationsModule | undefined> {
+  if (Platform.OS === 'web') return undefined
+  if (mod === undefined) {
+    try {
+      mod = (await import('expo-notifications')) as unknown as NotificationsModule
+      mod.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: false,
+          shouldSetBadge: false,
+        }),
+      })
+    } catch {
+      mod = null
+    }
+  }
+  return mod ?? undefined
+}
 
 let asked = false
 
@@ -17,16 +38,20 @@ export async function askNotifications(): Promise<void> {
   if (asked) return
   asked = true
   try {
-    const status = await Notifications.getPermissionsAsync()
-    if (status.status !== 'granted') await Notifications.requestPermissionsAsync()
+    const n = await load()
+    if (n === undefined) return
+    const status = await n.getPermissionsAsync()
+    if (status.status !== 'granted') await n.requestPermissionsAsync()
   } catch {
-    // Denied or unavailable: the in-app banners and the Dynamic Island still work.
+    // Denied or unavailable: the in-app banners still work.
   }
 }
 
 export async function notifyDone(botName: string, title: string): Promise<void> {
   try {
-    await Notifications.scheduleNotificationAsync({
+    const n = await load()
+    if (n === undefined) return
+    await n.scheduleNotificationAsync({
       content: { title: `${botName} · 工作完成`, body: title.slice(0, 180) },
       trigger: null,
     })
@@ -34,3 +59,5 @@ export async function notifyDone(botName: string, title: string): Promise<void> 
     // Nothing to do here: the chat itself still shows the result.
   }
 }
+
+export { loadDraft, saveDraft, clearDraft }
