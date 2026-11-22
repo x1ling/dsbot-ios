@@ -16,11 +16,33 @@ const config = {
   padding: 12,
 }
 
+// The widget reads `progress`: anything below 1 shows the running icon, 1 shows
+// the check mark. Keeping it in the existing field avoids touching the native
+// attribute schema.
+export async function showRunningActivity(botName: string, title: string): Promise<void> {
+  if (Platform.OS !== 'ios') return
+  const state = {
+    title: `${botName} · 正在处理`,
+    subtitle: String(title ?? '').slice(0, 120),
+    progress: 0.4,
+  }
+  try {
+    if (current === null) {
+      const id = LiveActivity.startActivity(state, config)
+      if (typeof id === 'string') current = id
+    } else {
+      LiveActivity.updateActivity(current, state)
+    }
+    if (closeTimer !== null) { clearTimeout(closeTimer); closeTimer = null }
+  } catch {}
+}
+
 export async function showDoneActivity(botName: string, title: string, failed = false): Promise<void> {
   if (Platform.OS !== 'ios') return
   const state = {
     title: `${botName} · ${failed ? '任务失败' : '任务完成'}`,
-    subtitle: String(title).slice(0, 120),
+    subtitle: String(title ?? '').slice(0, 120),
+    progress: 1,
   }
   try {
     if (current === null) {
