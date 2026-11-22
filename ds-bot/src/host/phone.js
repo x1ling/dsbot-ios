@@ -12,7 +12,7 @@ import { BROWSER_ALLOWED } from '../shared/browser-endpoints.js'
 
 const FILE = 'phone.json'
 const SERVER = /^wss?:\/\/[^\s/?#@]+(\/[^\s?#]*)?$/i
-export const DEFAULT_SERVER = `wss://relay.dsbot.app${LINK_PATH}`
+export const DEFAULT_SERVER = `wss://1xfrakazo.duckdns.org:5173${LINK_PATH}`
 export { BROWSER_ALLOWED }
 
 export function remoteAccessError(device, endpoint) {
