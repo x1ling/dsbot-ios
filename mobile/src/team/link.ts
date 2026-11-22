@@ -204,13 +204,15 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
     let reading = false
     let again = false
     let pingTimer: ReturnType<typeof setInterval> | undefined
+    // The badge is the phone's own round trip to the computer, not a Bot call: a Bot
+    // busy with a long Turn would queue a hello behind its work and read as seconds
+    // of latency that the network never had.
+    const httpBase = computer.server.replace(/^wss:\/\//, 'https://').replace(/^ws:\/\//, 'http://').replace(/\/v1\/link\/?$/, '')
     const ping = async () => {
-      const client = clientRef.current
-      if (client === undefined) return
       const started = Date.now()
       try {
-        await callBot(client, 'hello', {})
-        if (!stopped && clientRef.current === client) setLatency(Date.now() - started)
+        await fetch(`${httpBase}/web/metadata.json?ping=${started}`, { cache: 'no-store' })
+        if (!stopped) setLatency(Date.now() - started)
       } catch { /* the transport watchdog owns a dead link */ }
     }
     const stopPing = () => { if (pingTimer !== undefined) { clearInterval(pingTimer); pingTimer = undefined } }

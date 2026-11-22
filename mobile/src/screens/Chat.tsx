@@ -346,13 +346,17 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
       }
     })()
   }, [call, sessionId])
-  const openFile = useCallback((file: { name: string; attachmentId?: string }) => {
+  const openFile = useCallback((file: FileRef) => {
+    // Presented files (deliverables) carry no attachmentId: the host only serves them
+    // through the chunked download, so tapping such a card saves it instead of asking
+    // for a reader that cannot see it.
+    if (file.attachmentId === undefined) { saveFile(file); return }
     void call('file-text', { file }).then(result => {
       const read = result as { text?: string; truncated?: boolean } | string
       setReaderTitle(file.name)
       setReaderText(typeof read === 'string' ? read : read?.text ?? '')
     }, (failure: { code?: string; message?: string }) => setFileError(failure?.message ?? t('This file cannot be read here')))
-  }, [call])
+  }, [call, saveFile])
   // One stable toggle per steps row, so a memoized row is not redrawn for a new closure.
   const toggles = useRef(new Map<string, () => void>())
   const toggleOf = (key: string) => {
