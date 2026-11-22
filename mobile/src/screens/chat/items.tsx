@@ -54,6 +54,7 @@ export interface ChatItem {
   answers?: { id?: string; action?: string; values?: { selected?: string[]; inputs?: Record<string, unknown>; fields?: Record<string, string>; confirmed?: boolean }; selected?: string[]; custom?: string }[]
   tools?: { name: string; label?: string | null; ok?: boolean }[]
   ms?: number
+  think?: string
   live?: boolean
   texts?: string[]
   // Photos picked on this phone, shown from the device until the computer has them.
@@ -510,15 +511,27 @@ export function Actions({ visible, text, p, onClose, onSelect }: { visible: bool
 function Steps({ item, p, open, onToggle }: { item: ChatItem; p: Palette; open: boolean; onToggle: () => void }) {
   const tools = item.tools ?? []
   const seconds = typeof item.ms === 'number' ? Math.round(item.ms / 1000) : undefined
+  const think = typeof item.think === 'string' ? item.think.trim() : ''
+  const firstLine = think.split('\n').map(line => line.trim()).filter(Boolean).at(0) ?? ''
   return (
-    <View style={{ alignSelf: 'center', marginVertical: 4, maxWidth: '92%' }}>
-      <Pressable accessibilityRole="button" onPress={onToggle} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
-        <Text style={[type.caption, { color: p.ink3, textAlign: 'center' }]}>
-          {tools.length === 1 ? t('Used {count} tool', { count: tools.length }) : t('Used {count} tools', { count: tools.length })}{seconds !== undefined && seconds > 0 ? t(' · thought for {seconds}s', { seconds }) : ''}
-        </Text>
-      </Pressable>
-      {open ? tools.map((tool, index) => (
-        <Text key={`${tool.name}-${index}`} style={[type.caption, { color: p.ink2, textAlign: 'center' }]}>
+    <View style={{ alignSelf: 'stretch', marginVertical: 4, paddingHorizontal: 6 }}>
+      {think !== '' ? (
+        <Pressable accessibilityRole="button" onPress={onToggle} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, paddingVertical: 3 })}>
+          <Text style={[type.caption, { color: p.ink3 }]} numberOfLines={open ? undefined : 2}>
+            {t('Thinking')}{firstLine !== '' && !open ? ` · ${firstLine}` : ''}{open ? '' : '  ⌄'}
+          </Text>
+          {open ? <Text style={[type.caption, { color: p.ink2, marginTop: 6, lineHeight: 19 }]}>{think}</Text> : null}
+        </Pressable>
+      ) : null}
+      {tools.length > 0 ? (
+        <Pressable accessibilityRole="button" onPress={think === '' ? onToggle : undefined} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, paddingVertical: 3 })}>
+          <Text style={[type.caption, { color: p.ink3 }]}>
+            {t('Tool calls')} · {tools.length}{seconds !== undefined && seconds > 0 ? t(' · thought for {seconds}s', { seconds }) : ''}
+          </Text>
+        </Pressable>
+      ) : null}
+      {open && tools.length > 0 ? tools.map((tool, index) => (
+        <Text key={`${tool.name}-${index}`} style={[type.caption, { color: p.ink2, marginLeft: 12 }]}>
           {(tool.label ? t(tool.label) : undefined) ?? tool.name}{tool.ok === false ? t(' — failed') : ''}
         </Text>
       )) : null}

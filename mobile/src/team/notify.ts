@@ -1,5 +1,43 @@
-// Notifications are disabled until the native module versions are proven on the
-// device. These are no-ops so the rest of the app keeps compiling and running.
-export async function askNotifications(): Promise<void> {}
+// Local notifications for the iOS lab build: a banner + sound when a Bot finishes.
+// Everything is guarded so a device that refuses permission never breaks the app.
+import { Platform } from 'react-native'
+import * as Notifications from 'expo-notifications'
 
-export async function notifyDone(_botName: string, _title: string): Promise<void> {}
+let handlerInstalled = false
+
+function installHandler(): void {
+  if (handlerInstalled) return
+  handlerInstalled = true
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    })
+  } catch {}
+}
+
+export async function askNotifications(): Promise<void> {
+  if (Platform.OS !== 'ios') return
+  installHandler()
+  try {
+    const settings = await Notifications.getPermissionsAsync()
+    if (settings.granted !== true) {
+      await Notifications.requestPermissionsAsync({ ios: { allowAlert: true, allowSound: true, allowBadge: false } })
+    }
+  } catch {}
+}
+
+export async function notifyDone(botName: string, title: string): Promise<void> {
+  if (Platform.OS !== 'ios') return
+  installHandler()
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: { title: `${botName} · 任务完成`, body: String(title).slice(0, 160), sound: true },
+      trigger: null,
+    })
+  } catch {}
+}
