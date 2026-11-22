@@ -1,4 +1,4 @@
-import { DICTIONARY } from '../../../ds-bot/src/client/i18n.js'
+﻿import { DICTIONARY } from '../../../ds-bot/src/client/i18n.js'
 
 // Phone copy shares the desktop dictionary. Mobile-only strings have their own
 // Chinese entries here; the English source stays the key, as on the desktop.
@@ -227,6 +227,14 @@ const MOBILE_ZH: Record<string, string> = {
   'This approval is no longer open.': '这项批准已经关闭了。',
   'Submit': '提交',
   'Stop': '停止',
+  'Plugins': '插件',
+  'Refresh': '刷新',
+  'Loading…': '加载中…',
+  'No plugins installed': '还没有安装插件',
+  '{count} plugins': '{count} 个插件',
+  'Installed, not active': '已安装，未启用',
+  'Thinking': '推理',
+  'Default': '默认',
   'Talk over…': '插话…',
   'Search the team': '搜索团队',
   'Members': '成员',
@@ -321,3 +329,4 @@ export function clockLabel(time: number, now = Date.now()): string {
   return isZh() ? `${year}${d.getMonth() + 1}月${d.getDate()}日 ${WEEK_ZH[d.getDay()]} ${clock(time)}` : `${WEEK_EN[d.getDay()]}, ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}${year} ${clock(time)}`
 }
 export const messageClock = (time: number, now = Date.now()) => (daysBefore(time, now) === 0 ? clock(time) : clockLabel(time, now))
+

@@ -1,4 +1,4 @@
-import { Children, Fragment, useEffect, useRef, useState } from 'react'
+﻿import { Children, Fragment, useEffect, useRef, useState } from 'react'
 import { useIsFocused } from '@react-navigation/native'
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -827,3 +827,37 @@ const styles = StyleSheet.create({
   field: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, minHeight: 40, paddingVertical: 6 },
   multi: { minHeight: 80, paddingVertical: 10, textAlignVertical: 'top', fontFamily: 'monospace' },
 })
+
+// ------------------------------------------------------------ Plugins
+// What this computer's DSH profile actually has installed: read from the
+// profile on disk when the page opens, so dsh plugin add shows up here.
+export function Plugins({ navigation }: any) {
+  const { p } = useTheme()
+  const { call } = useTeam()
+  const [items, setItems] = useState<{ name: string; version: string; bundle?: boolean }[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const load = () => {
+    setError(null)
+    void call('plugins', {}).then((value: any) => setItems(Array.isArray(value?.items) ? value.items : []), (failure: { message?: string }) => setError(failure?.message ?? String(failure)))
+  }
+  useEffect(load, [])
+  return (
+    <Screen><Back title={t('Plugins')} onBack={() => navigation.goBack()} />
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        {error ? <Text style={[typeScale.small, { color: p.danger, margin: 18 }]}>{error}</Text> : null}
+        {items === null && error === null ? <Text style={[typeScale.small, { color: p.ink3, margin: 18 }]}>{t('Loading…')}</Text> : null}
+        {items !== null && items.length === 0 ? <Text style={[typeScale.small, { color: p.ink3, margin: 18 }]}>{t('No plugins installed')}</Text> : null}
+        {items !== null && items.length > 0 ? (
+          <Section label={t('{count} plugins', { count: items.length })}>
+            {items.map(item => (
+              <Row key={item.name} label={item.name} value={item.version} hint={item.bundle === false ? t('Installed, not active') : undefined} />
+            ))}
+          </Section>
+        ) : null}
+        <Pressable accessibilityRole="button" onPress={load} style={{ margin: 18, padding: 12, borderRadius: radius.card, backgroundColor: p.card, borderWidth: StyleSheet.hairlineWidth, borderColor: p.line }}>
+          <Text style={[typeScale.settingsRow, { color: p.accent, textAlign: 'center' }]}>{t('Refresh')}</Text>
+        </Pressable>
+      </ScrollView>
+    </Screen>
+  )
+}

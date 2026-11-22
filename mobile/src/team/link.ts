@@ -8,6 +8,7 @@ import { OPTIMISTIC, optimistic, withWrites, type Write } from './optimistic.ts'
 import { t } from '../ui/i18n.ts'
 import type { PhoneIdentity, SavedComputer } from '../store.ts'
 import { showDoneActivity } from './live.ts'
+import { askNotifications, notifyDone } from './notify.ts'
 
 // Feed events keep the app live; the poll only stays as a foreground fallback.
 const POLL_MS = 15_000
@@ -131,7 +132,7 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
     if (seen !== null) {
       for (const bot of next.bots ?? []) {
         const task = (bot.tasks ?? []).find(entry => (entry.status === 'completed' || entry.status === 'failed') && !seen.has(entry.id))
-        if (task !== undefined) { void showDoneActivity(bot.name, task.title, task.status === 'failed'); break }
+        if (task !== undefined) { void showDoneActivity(bot.name, task.title, task.status === 'failed'); void notifyDone(bot.name, task.title); break }
       }
     }
     setTeam(prev => {
@@ -175,6 +176,7 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
 
   useEffect(() => {
     let stopped = false
+    void askNotifications()
     let connecting = false
     let hadLink = false
     let failStreak = 0
@@ -360,3 +362,4 @@ function localized(failure: unknown): unknown {
   if (failure instanceof Error) failure.message = t(failure.message)
   return failure
 }
+
