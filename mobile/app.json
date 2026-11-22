@@ -10,7 +10,9 @@
       "themeColor": "#fcfcfc",
       "favicon": "./assets/icon.png"
     },
-    "experiments": { "baseUrl": "/web" },
+    "experiments": {
+      "baseUrl": "/web"
+    },
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -18,7 +20,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.x1ling.dsbot",
       "infoPlist": {
-        "CFBundleLocalizations": ["en", "zh-Hans"],
+        "CFBundleLocalizations": [
+          "en",
+          "zh-Hans"
+        ],
         "ITSAppUsesNonExemptEncryption": false,
         "NSSupportsLiveActivities": true,
         "NSSupportsLiveActivitiesFrequentUpdates": true
@@ -40,7 +45,6 @@
     "scheme": "dsbot",
     "plugins": [
       "expo-secure-store",
-
       [
         "expo-camera",
         {
@@ -60,7 +64,7 @@
           }
         }
       ]
-    ]
+    ],
+    "version": "0.4.0"
   }
 }
-
