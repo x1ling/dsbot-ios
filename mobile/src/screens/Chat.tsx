@@ -123,7 +123,7 @@ const sameMessage = (item: ChatItem, sent: ChatItem) =>
 // shell's own (back row or pill).
 export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; room?: Room; agent?: Agent; header: React.ReactNode; onMissing?: () => void }) {
   const navigation = useNavigation<any>()
-  const { team, call, refresh: refreshTeam, computer, hello } = useTeam()
+  const { team, call, refresh: refreshTeam, computer, hello, latency } = useTeam()
   const { p, dark } = useTheme()
   const insets = useSafeAreaInsets()
   const kind: ChatKind = room !== undefined ? 'room' : agent !== undefined ? 'agent' : 'bot'
@@ -561,6 +561,12 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
       <Dock question={question} sessionId={sessionId} approvals={approvals} learning={learning} secrets={secrets} connectorRequests={connectorRequests} botName={bot?.name} onOpenConnector={connectorId => { if (connectorCanConnectOnMobile(connectorId)) navigation.navigate('Settings', { screen: 'Connectors', params: { focusId: connectorId }, initial: false }) }} btw={btw} handoff={browserHold} view={team?.views?.[sessionId]} call={call} p={p} expanded={expandedKey} onExpand={setExpandedKey} />
       {fileError ? <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4 }]} accessibilityRole="alert">{fileError}</Text> : null}
       {page !== null && loadError !== null ? <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4, marginHorizontal: 16 }]} accessibilityRole="alert">{loadError}</Text> : null}
+      {latency != null ? (
+        <View pointerEvents="none" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5, paddingHorizontal: 18, paddingBottom: 3 }}>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: latency < 150 ? p.green : latency < 400 ? '#E5A000' : p.danger }} />
+          <Text style={[type.small, { color: p.ink3, fontVariant: ['tabular-nums'] }]}>{latency} ms</Text>
+        </View>
+      ) : null}
       <Composer name={bot?.name ?? room?.name ?? agent?.name ?? ''} running={running} canStop={canStop} canAttach={hello?.capabilities?.includes('send-images') === true} onSend={send} onStop={stop} p={p} />
       <Actions visible={menuText !== null} text={menuText ?? ''} p={p}
         onClose={() => setMenuText(null)}

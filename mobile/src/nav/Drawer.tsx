@@ -54,15 +54,16 @@ export function Drawer({ width, edgeEnabled = true, backOpens = true, content, c
 
   const edgePan = useMemo(() => Gesture.Pan()
     .enabled(!shown && edgeEnabled)
-    .activeOffsetX(24)
-    .failOffsetX(-8)
-    .failOffsetY([-12, 12])
+    .activeOffsetX(10)
+    .failOffsetX(-24)
+    .failOffsetY([-16, 16])
     .onTouchesDown((e, manager) => {
-      // Leave the system back edge alone; never claim starts in the right half.
+      // A right swipe anywhere on the left third opens the team list. The old 20px
+      // edge was inside iOS's own back-gesture strip, so it almost never fired.
       const start = e.allTouches[0]
-      if (e.numberOfTouches !== 1 || !start || start.absoluteX < 20 || start.absoluteX > screenWidth / 2) manager.fail()
+      if (e.numberOfTouches !== 1 || !start || start.absoluteX > screenWidth * 0.4) manager.fail()
     })
-    .onEnd(e => { if (e.translationX >= 60 || e.velocityX > 350) runOnJS(open)() }),
+    .onEnd(e => { if (e.translationX >= 40 || e.velocityX > 250) runOnJS(open)() }),
   [shown, edgeEnabled, screenWidth, open])
 
   const drawerPan = useMemo(() => Gesture.Pan()

@@ -86,17 +86,18 @@ export function Composer({ name, running, canStop, canAttach, onSend, onStop, p 
               <PlusIcon size={20} color={p.ink2} />
             </Pressable>
           ) : null}
-          <TextInput value={text} onChangeText={setText} placeholder={t('Message {name}', { name })} placeholderTextColor={p.ink3}
+          <TextInput value={text} onChangeText={setText} placeholder={running ? t('Talk over…') : t('Message {name}', { name })} placeholderTextColor={p.ink3}
             multiline style={[styles.input, { color: p.ink, paddingLeft: canAttach ? 2 : 6 }]} accessibilityLabel={t('Message {name}', { name })} />
-          {running && canStop && !ready
+          {running && canStop
             ? <Pressable accessibilityRole="button" accessibilityLabel={t('Stop')} onPress={onStop} hitSlop={6}
-                style={[styles.send, { backgroundColor: p.accent }]}>
-                <StopIcon size={14} />
+                style={[styles.stop, { backgroundColor: p.hover }]}>
+                <StopIcon size={13} color={p.ink2} />
               </Pressable>
-            : <Pressable accessibilityRole="button" accessibilityLabel={t('Send')} disabled={!ready} onPress={send} hitSlop={6}
-                style={[styles.send, { backgroundColor: p.accent, opacity: ready ? 1 : 0.35 }]}>
-                <ArrowUpIcon size={18} />
-              </Pressable>}
+            : null}
+          <Pressable accessibilityRole="button" accessibilityLabel={ready ? (running ? t('Talk over…') : t('Send')) : t('Send')} disabled={!ready} onPress={send} hitSlop={6}
+            style={[styles.send, { backgroundColor: p.accent, opacity: ready ? 1 : 0.35 }]}>
+            <ArrowUpIcon size={18} />
+          </Pressable>
         </View>
       </View>
     </View>
@@ -112,4 +113,5 @@ const styles = StyleSheet.create({
   attach: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, fontSize: 16, lineHeight: 22, paddingTop: 7, paddingBottom: 7, paddingRight: 6, maxHeight: 130 },
   send: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  stop: { width: 32, height: 36, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
 })

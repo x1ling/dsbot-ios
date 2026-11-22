@@ -24,16 +24,9 @@ jobs:
         working-directory: mobile
         run: npm ci --no-audit --no-fund
 
-      - name: Align Expo native module versions
-        working-directory: mobile
-        run: |
-          npx expo install --fix || true
-          npm install --no-audit --no-fund
-          node -e "const p=require('./node_modules/expo-modules-core/package.json');const f=require('./node_modules/expo-file-system/package.json');const e=require('./node_modules/expo/package.json');console.log('expo',e.version,'expo-modules-core',p.version,'expo-file-system',f.version)"
-
       - name: Generate the iOS project
         working-directory: mobile
-        run: npx expo prebuild --platform ios --no-install --clean
+        run: npx expo prebuild --platform ios --no-install
 
       - name: Install CocoaPods
         working-directory: mobile/ios

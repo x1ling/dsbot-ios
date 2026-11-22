@@ -227,6 +227,7 @@ const MOBILE_ZH: Record<string, string> = {
   'This approval is no longer open.': '这项批准已经关闭了。',
   'Submit': '提交',
   'Stop': '停止',
+  'Talk over…': '插话…',
   'Search the team': '搜索团队',
   'Members': '成员',
   'A secret is needed': '需要一个密钥',

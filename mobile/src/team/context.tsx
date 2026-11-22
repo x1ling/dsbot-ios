@@ -17,6 +17,7 @@ export interface TeamCtx {
   refresh?: () => void
   computer: SavedComputer | null
   hello?: { api: number | null; capabilities: string[]; boot: string; seq: number } | null
+  latency?: number | null
   onFeed?: (handler: (event: string, data: any) => void) => () => void
 }
 
@@ -25,7 +26,7 @@ export const useTeam = () => useContext(Ctx)
 
 export function TeamProvider({ computer, identity, children }: { computer: SavedComputer; identity: PhoneIdentity; children: ReactNode }) {
   const link = useTeamLink(computer, identity)
-  const value = useMemo<TeamCtx>(() => ({ team: link.team, online: link.online, linked: link.linked, error: link.error, call: link.call, refresh: link.refresh, computer, hello: link.hello, onFeed: link.onFeed }), [link.team, link.online, link.linked, link.error, link.call, link.refresh, link.hello, link.onFeed, computer])
+  const value = useMemo<TeamCtx>(() => ({ team: link.team, online: link.online, linked: link.linked, error: link.error, call: link.call, refresh: link.refresh, computer, hello: link.hello, latency: link.latency, onFeed: link.onFeed }), [link.team, link.online, link.linked, link.error, link.call, link.refresh, link.hello, link.latency, link.onFeed, computer])
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 

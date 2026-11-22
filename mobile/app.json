@@ -1,4 +1,4 @@
-﻿{
+{
   "expo": {
     "name": "DS Bot",
     "slug": "dsbot",
@@ -19,7 +19,9 @@
       "bundleIdentifier": "com.x1ling.dsbot",
       "infoPlist": {
         "CFBundleLocalizations": ["en", "zh-Hans"],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSSupportsLiveActivities": true,
+        "NSSupportsLiveActivitiesFrequentUpdates": true
       }
     },
     "android": {
@@ -38,6 +40,7 @@
     "scheme": "dsbot",
     "plugins": [
       "expo-secure-store",
+      "expo-live-activity",
       [
         "expo-camera",
         {
