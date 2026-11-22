@@ -4,10 +4,11 @@ import type { RpcClient } from '../../../link/src/index.ts'
 import { callBot, callBotState, openLink, type TeamState } from '../connection.ts'
 import { ensureUnlock } from './gate'
 import { createNoticeCursor, type NoticeCursorAnswer } from './notices.ts'
+import { bumpRecency } from './recency.ts'
 import { OPTIMISTIC, optimistic, withWrites, type Write } from './optimistic.ts'
 import { t } from '../ui/i18n.ts'
 import type { PhoneIdentity, SavedComputer } from '../store.ts'
-import { showDoneActivity } from './live.ts'
+import { showDoneActivity, showRunningActivity } from './live.ts'
 import { askNotifications, notifyDone } from './notify.ts'
 
 // Feed events keep the app live; the poll only stays as a foreground fallback.
@@ -64,6 +65,7 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
   // Task ids already seen as finished: a fresh finish lights the Dynamic Island,
   // the first full read only seeds the set (old history must stay quiet).
   const finishedTasks = useRef<Set<string> | null>(null)
+  const runningTasks = useRef<Set<string> | null>(null)
   const pollRef = useRef<() => void>(() => {})
   const feedHandlers = useRef(new Set<FeedHandler>())
   const hostRef = useRef(computer.hostDeviceId)
@@ -102,7 +104,7 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
   }
 
   // Every bot whose photo came as a ref gets the cached image, or keeps the
-  // previous team's photo while the fetch runs — never a blank avatar.
+  // previous team's photo while the fetch runs 鈥?never a blank avatar.
   function fillPhotos(team: TeamState, prev: TeamState | null): TeamState {
     if (!Array.isArray(team.bots)) return team
     const bots = team.bots.map(bot => {
@@ -123,16 +125,30 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
     if (next.revision < revision.current) return
     revision.current = next.revision
     if (typeof next.liveKey === 'string') liveKey.current = next.liveKey
-    // A task that just finished lights the Dynamic Island; the first full read
-    // only records what was already done.
+    // A task that just started or finished lights the Dynamic Island; the first
+    // full read only records what already happened.
     const done = new Set<string>()
-    for (const bot of next.bots ?? []) for (const task of bot.tasks ?? []) if (task.status === 'completed' || task.status === 'failed') done.add(task.id)
+    const working = new Set<string>()
+    for (const bot of next.bots ?? []) {
+      for (const task of bot.tasks ?? []) {
+        if (task.status === 'completed' || task.status === 'failed') done.add(task.id)
+        else if (task.status === 'running' || task.status === 'pending') working.add(task.id)
+      }
+    }
     const seen = finishedTasks.current
     finishedTasks.current = done
+    const seenWorking = runningTasks.current
+    runningTasks.current = working
     if (seen !== null) {
       for (const bot of next.bots ?? []) {
         const task = (bot.tasks ?? []).find(entry => (entry.status === 'completed' || entry.status === 'failed') && !seen.has(entry.id))
         if (task !== undefined) { void showDoneActivity(bot.name, task.title, task.status === 'failed'); void notifyDone(bot.name, task.title); break }
+      }
+    }
+    if (seenWorking !== null) {
+      for (const bot of next.bots ?? []) {
+        const task = (bot.tasks ?? []).find(entry => (entry.status === 'running' || entry.status === 'pending') && !seenWorking.has(entry.id))
+        if (task !== undefined) { void showRunningActivity(bot.name, task.title); break }
       }
     }
     setTeam(prev => {
@@ -275,7 +291,11 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
         const { sameBoot, since } = noticeCursor.connect(helloResult)
         client.onEvent(({ event, data }: { event: string; data: any }) => {
           if (stopped || clientRef.current !== client) return
-          if (event === 'notice' && !noticeCursor.acceptLive(helloResult.boot, data)) return
+          if (event === 'notice') {
+            if (!noticeCursor.acceptLive(helloResult.boot, data)) return
+            const seen = data as { botId?: string; roomId?: string; time?: number }
+            bumpRecency(seen.botId ?? seen.roomId, typeof seen.time === 'number' ? seen.time : Date.now())
+          }
           if (event === 'revision' || event === 'live') void poll()
           for (const handler of feedHandlers.current) handler(event, data)
         })
@@ -286,6 +306,8 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
           else {
             if (replay.length > 0) void poll()
             for (const entry of replay) {
+              const seen = entry as { botId?: string; roomId?: string; time?: number }
+              bumpRecency(seen.botId ?? seen.roomId, typeof seen.time === 'number' ? seen.time : Date.now())
               for (const handler of feedHandlers.current) handler('notice', entry)
             }
           }
@@ -364,4 +386,5 @@ function localized(failure: unknown): unknown {
   if (failure instanceof Error) failure.message = t(failure.message)
   return failure
 }
+
 

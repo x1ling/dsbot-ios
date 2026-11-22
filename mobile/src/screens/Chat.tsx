@@ -326,6 +326,7 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
   const [readerText, setReaderText] = useState<string | null>(null)
   const [readerTitle, setReaderTitle] = useState<string | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [saving, setSaving] = useState<{ name: string; loaded: number; total: number } | null>(null)
   const [photos, setPhotos] = useState<{ sessionId: string; refs: ImageRef[]; index: number } | null>(null)
   // Save hands the file to the phone: the host sends its bytes, the app writes them
   // to a cache file, and the system share sheet lets Android put it in Downloads or
@@ -337,12 +338,15 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
       ? { sessionId: targetSession, attachmentId: file.attachmentId }
       : { sessionId: targetSession, seq: file.seq, index: file.index }
     void (async () => {
+      setSaving({ name: file.name, loaded: 0, total: 0 })
       try {
-        const saved = await downloadFile(call, payload)
+        const saved = await downloadFile(call, payload, (loaded, total) => setSaving({ name: file.name, loaded, total }))
         await shareFile(saved)
       } catch (failure) {
         const msg = (failure as { message?: string })?.message
         setFileError(msg ?? t('Could not save this file'))
+      } finally {
+        setSaving(null)
       }
     })()
   }, [call, sessionId])
@@ -487,6 +491,13 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
   const memberKey = JSON.stringify((team?.bots ?? []).map(entry => [entry.id, entry.name, entry.color, entry.avatar?.shape, entry.avatar?.imageRef ?? entry.avatar?.image?.length]))
   const botsById = useMemo(() => new Map((team?.bots ?? []).map(entry => [entry.id, entry])), [memberKey])
   const canStop = room !== undefined ? roomWork.length > 0 : running
+  // A group's members, offered by the composer's "@" so one Bot can be addressed
+  // without typing its exact name; the room's own routing reads the mention.
+  const mentionBots = useMemo(() => {
+    if (room === undefined) return undefined
+    const ids = Array.isArray(room.members) ? room.members : []
+    return (team?.bots ?? []).filter(entry => ids.includes(entry.id)).map(entry => ({ id: entry.id, name: entry.name ?? '' }))
+  }, [room, team?.bots])
   const inRoom = room !== undefined
   const admin = room?.admin
 
@@ -569,6 +580,13 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
       {bot !== undefined ? <ComputerCards bot={bot} p={p} /> : null}
       {running && doingBot ? <ActionRow bot={doingBot} doing={doingText} p={p} dark={dark} /> : null}
       <Dock question={question} sessionId={sessionId} approvals={approvals} learning={learning} secrets={secrets} connectorRequests={connectorRequests} botName={bot?.name} onOpenConnector={connectorId => { if (connectorCanConnectOnMobile(connectorId)) navigation.navigate('Settings', { screen: 'Connectors', params: { focusId: connectorId }, initial: false }) }} btw={btw} handoff={browserHold} view={team?.views?.[sessionId]} call={call} p={p} expanded={expandedKey} onExpand={setExpandedKey} />
+      {saving ? (
+        <Text style={[type.small, { color: p.ink2, textAlign: 'center', marginBottom: 4 }]}>
+          {saving.total > 0
+            ? `${t('Saving')} ${saving.name} · ${Math.min(100, Math.round((saving.loaded / saving.total) * 100))}%`
+            : `${t('Saving')} ${saving.name}…`}
+        </Text>
+      ) : null}
       {fileError ? <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4 }]} accessibilityRole="alert">{fileError}</Text> : null}
       {page !== null && loadError !== null ? <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4, marginHorizontal: 16 }]} accessibilityRole="alert">{loadError}</Text> : null}
       {bot !== undefined && chatModel !== undefined && (chatReasoning?.efforts?.length ?? 0) > 0 ? (
@@ -585,7 +603,7 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
           <Text style={[type.small, { color: p.ink3, fontVariant: ['tabular-nums'] }]}>{latency} ms</Text>
         </View>
       ) : null}
-      <Composer name={bot?.name ?? room?.name ?? agent?.name ?? ''} running={running} canStop={canStop} canAttach={hello?.capabilities?.includes('send-images') === true} onSend={send} onStop={stop} draftKey={chatKey} p={p} />
+      <Composer name={bot?.name ?? room?.name ?? agent?.name ?? ''} running={running} canStop={canStop} canAttach={hello?.capabilities?.includes('send-images') === true} onSend={send} onStop={stop} draftKey={chatKey} mention={mentionBots} p={p} />
       <Modal visible={effortOpen} transparent animationType="slide" onRequestClose={() => setEffortOpen(false)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' }} onPress={() => setEffortOpen(false)} accessibilityLabel={t('Close')} />
         <View style={{ backgroundColor: p.card, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: insets.bottom + 8 }}>

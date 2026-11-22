@@ -53,8 +53,10 @@
     "android": "expo run:android",
     "typecheck": "tsc --noEmit",
     "test": "node --test src/team/*.test.ts src/nav/*.test.ts src/screens/chat/*.test.ts plugins/*.test.js",
-    "ios:archive": "sh scripts/ios-archive.sh"
+    "ios:archive": "sh scripts/ios-archive.sh",
+    "postinstall": "node scripts/patch-live-activity.js"
   },
   "private": true,
   "license": "Apache-2.0"
 }
+

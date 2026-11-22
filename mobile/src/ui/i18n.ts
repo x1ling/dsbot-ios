@@ -1,4 +1,4 @@
-﻿import { DICTIONARY } from '../../../ds-bot/src/client/i18n.js'
+import { DICTIONARY } from '../../../ds-bot/src/client/i18n.js'
 
 // Phone copy shares the desktop dictionary. Mobile-only strings have their own
 // Chinese entries here; the English source stays the key, as on the desktop.
@@ -241,6 +241,8 @@ const MOBILE_ZH: Record<string, string> = {
   'Thinking': '推理',
   'Default': '默认',
   'Talk over…': '插话…',
+  'Saving': '保存中',
+  'Mention a Bot': '@ 一个 Bot',
   'Search the team': '搜索团队',
   'Members': '成员',
   'A secret is needed': '需要一个密钥',

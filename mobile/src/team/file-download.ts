@@ -1,12 +1,17 @@
 import { Directory, File, FileMode, Paths } from 'expo-file-system'
 import { fileChunks } from '../../../ds-bot/src/shared/file-chunks.js'
 
-export async function downloadFile(call: (endpoint: string, payload: object) => Promise<unknown>, target: object) {
+export async function downloadFile(
+  call: (endpoint: string, payload: object) => Promise<unknown>,
+  target: object,
+  onProgress?: (loaded: number, total: number) => void,
+) {
   const dir = new Directory(Paths.cache, 'downloads', `${Date.now()}-${Math.random().toString(36).slice(2)}`)
   dir.create({ intermediates: true })
   let file: File | undefined
   let handle: ReturnType<File['open']> | undefined
   let saved: { uri: string; name: string; mime: string } | undefined
+  let loaded = 0
   try {
     for await (const part of fileChunks(call, target)) {
       if (file === undefined) {
@@ -17,6 +22,8 @@ export async function downloadFile(call: (endpoint: string, payload: object) => 
         saved = { uri: file.uri, name: file.name, mime: part.mime || 'application/octet-stream' }
       }
       await handle!.writeBytes(part.data)
+      loaded += part.data.length
+      onProgress?.(loaded, Number(part.size || loaded))
     }
     return saved!
   } catch (error) {

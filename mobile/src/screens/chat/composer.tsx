@@ -27,11 +27,13 @@ async function prepare(asset: ImagePicker.ImagePickerAsset): Promise<Photo> {
 // shadow; send is a 36px accent circle. While the Bot runs and the draft is
 // empty a stop button shows instead of send. "+" adds photos when the
 // computer takes them.
-export function Composer({ name, running, canStop, canAttach, onSend, onStop, draftKey, p }: {
+export function Composer({ name, running, canStop, canAttach, onSend, onStop, draftKey, mention, p }: {
   name: string; running: boolean; canStop: boolean; canAttach: boolean
   onSend: (text: string, photos: Photo[]) => Promise<void>; onStop: () => void; draftKey?: string; p: Palette
+  mention?: { id: string; name: string }[]
 }) {
   const [text, setText] = useState('')
+  const [mentionOpen, setMentionOpen] = useState(false)
   const [restored, setRestored] = useState(false)
   const [photos, setPhotos] = useState<Photo[]>([])
   const [preparing, setPreparing] = useState(false)
@@ -96,10 +98,25 @@ export function Composer({ name, running, canStop, canAttach, onSend, onStop, dr
             {preparing ? <View style={[styles.photo, { backgroundColor: p.hover, alignItems: 'center', justifyContent: 'center' }]}><ActivityIndicator color={p.ink3} /></View> : null}
           </ScrollView>
         ) : null}
+        {mentionOpen && (mention?.length ?? 0) > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.photos} keyboardShouldPersistTaps="handled">
+            {(mention ?? []).map(entry => (
+              <Pressable key={entry.id} accessibilityRole="button" onPress={() => { setText(prev => prev === '' ? `@${entry.name} ` : `${prev.replace(/\s+$/, '')} @${entry.name} `); setMentionOpen(false) }}
+                style={[styles.mentionChip, { backgroundColor: p.hover, borderColor: p.line2 }]}>
+                <Text style={[typeScale.small, { color: p.ink }]}>@{entry.name}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : null}
         <View style={styles.line}>
           {canAttach ? (
             <Pressable accessibilityRole="button" accessibilityLabel={t('Add photos')} onPress={() => void pick()} hitSlop={6} style={styles.attach}>
               <PlusIcon size={20} color={p.ink2} />
+            </Pressable>
+          ) : null}
+          {(mention?.length ?? 0) > 0 ? (
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Mention a Bot')} onPress={() => setMentionOpen(open => !open)} hitSlop={6} style={styles.attach}>
+              <Text style={[styles.at, { color: mentionOpen ? p.accent : p.ink2 }]}>@</Text>
             </Pressable>
           ) : null}
           <TextInput value={text} onChangeText={setText} placeholder={running ? t('Talk over…') : t('Message {name}', { name })} placeholderTextColor={p.ink3}
@@ -130,5 +147,7 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 16, lineHeight: 22, paddingTop: 7, paddingBottom: 7, paddingRight: 6, maxHeight: 130 },
   send: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   stop: { width: 32, height: 36, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
+  at: { fontSize: 19, fontWeight: '600' },
+  mentionChip: { borderRadius: 12, borderWidth: 0.5, paddingHorizontal: 10, paddingVertical: 5 },
 })
 
