@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import type { RpcClient } from '../../../link/src/index.ts'
 import { callBot, callBotState, openLink, type TeamState } from '../connection.ts'

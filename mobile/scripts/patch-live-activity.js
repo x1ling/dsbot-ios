@@ -21,7 +21,7 @@ const end = source.indexOf(tail)
 if (start === -1 || end === -1) throw new Error('live-activity layout anchors not found')
 
 const replacement = `      } compactLeading: {
-        ${MARK}
+        // ${MARK}
         stateIcon(progress: context.state.progress, tint: context.attributes.progressViewTint)
           .applyWidgetURL(from: context.attributes.deepLinkUrl)
       } compactTrailing: {
