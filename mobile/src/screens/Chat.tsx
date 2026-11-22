@@ -19,6 +19,7 @@ import { workPhrase } from '../ui/phrases.ts'
 import { ActionRow, Dock } from './chat/dock.tsx'
 import { learningForChat } from './chat/learning.ts'
 import { Composer, type Photo } from './chat/composer.tsx'
+import { EffortBar, effortLabel, modelOf, useReasoning } from './model-menu.tsx'
 import { Actions, Item, keysOf, PhotoViewer, PhotoViewerCtx, type ChatItem, type FileRef, type ImageRef } from './chat/items.tsx'
 import { bumpMarkdownImageCache } from './chat/markdown.tsx'
 
@@ -124,6 +125,11 @@ const sameMessage = (item: ChatItem, sent: ChatItem) =>
 export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; room?: Room; agent?: Agent; header: React.ReactNode; onMissing?: () => void }) {
   const navigation = useNavigation<any>()
   const { team, call, refresh: refreshTeam, computer, hello, latency } = useTeam()
+  const models = (team?.models ?? []) as never[]
+  const chatModel = bot !== undefined ? modelOf(bot, models) : undefined
+  const chatReasoning = useReasoning(chatModel?.ref, models)
+  const chatLevel = bot !== undefined ? effortLabel(chatReasoning, bot.effort) : undefined
+  const [effortOpen, setEffortOpen] = useState(false)
   const { p, dark } = useTheme()
   const insets = useSafeAreaInsets()
   const kind: ChatKind = room !== undefined ? 'room' : agent !== undefined ? 'agent' : 'bot'
@@ -561,13 +567,28 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
       <Dock question={question} sessionId={sessionId} approvals={approvals} learning={learning} secrets={secrets} connectorRequests={connectorRequests} botName={bot?.name} onOpenConnector={connectorId => { if (connectorCanConnectOnMobile(connectorId)) navigation.navigate('Settings', { screen: 'Connectors', params: { focusId: connectorId }, initial: false }) }} btw={btw} handoff={browserHold} view={team?.views?.[sessionId]} call={call} p={p} expanded={expandedKey} onExpand={setExpandedKey} />
       {fileError ? <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4 }]} accessibilityRole="alert">{fileError}</Text> : null}
       {page !== null && loadError !== null ? <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4, marginHorizontal: 16 }]} accessibilityRole="alert">{loadError}</Text> : null}
+      {bot !== undefined && chatModel !== undefined && (chatReasoning?.efforts?.length ?? 0) > 0 ? (
+        <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingBottom: 2 }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Thinking')} onPress={() => setEffortOpen(true)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: p.card, borderWidth: StyleSheet.hairlineWidth, borderColor: p.line }}>
+            <Text style={[type.small, { color: p.ink2 }]}>{t('Thinking')} · {chatLevel ?? t('Default')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {latency != null ? (
         <View pointerEvents="none" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5, paddingHorizontal: 18, paddingBottom: 3 }}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: latency < 150 ? p.green : latency < 400 ? '#E5A000' : p.danger }} />
           <Text style={[type.small, { color: p.ink3, fontVariant: ['tabular-nums'] }]}>{latency} ms</Text>
         </View>
       ) : null}
-      <Composer name={bot?.name ?? room?.name ?? agent?.name ?? ''} running={running} canStop={canStop} canAttach={hello?.capabilities?.includes('send-images') === true} onSend={send} onStop={stop} p={p} />
+      <Composer name={bot?.name ?? room?.name ?? agent?.name ?? ''} running={running} canStop={canStop} canAttach={hello?.capabilities?.includes('send-images') === true} onSend={send} onStop={stop} draftKey={chatKey} p={p} />
+      <Modal visible={effortOpen} transparent animationType="slide" onRequestClose={() => setEffortOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' }} onPress={() => setEffortOpen(false)} accessibilityLabel={t('Close')} />
+        <View style={{ backgroundColor: p.card, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: insets.bottom + 8 }}>
+          <EffortBar reasoning={chatReasoning} current={chatReasoning?.efforts?.some(e => e.id === bot?.effort) ? bot?.effort : undefined}
+            onPick={effort => { if (bot !== undefined) void call('update-bot', { id: bot.id, effort: effort ?? null }); setEffortOpen(false) }} />
+        </View>
+      </Modal>
       <Actions visible={menuText !== null} text={menuText ?? ''} p={p}
         onClose={() => setMenuText(null)}
         onSelect={() => { setReaderTitle(null); setReaderText(menuText); setMenuText(null) }} />

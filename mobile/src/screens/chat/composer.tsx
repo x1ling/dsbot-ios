@@ -1,9 +1,10 @@
 import * as Haptics from 'expo-haptics'
 import * as ImagePicker from 'expo-image-picker'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { loadDraft, saveDraft } from '../../team/draft.ts'
 import { t } from '../../ui/i18n.ts'
 import { ArrowUpIcon, CloseIcon, PlusIcon, StopIcon } from '../../ui/icons.tsx'
 import { radius, shadow, type as typeScale, type Palette } from '../../ui/tokens.ts'
@@ -26,11 +27,12 @@ async function prepare(asset: ImagePicker.ImagePickerAsset): Promise<Photo> {
 // shadow; send is a 36px accent circle. While the Bot runs and the draft is
 // empty a stop button shows instead of send. "+" adds photos when the
 // computer takes them.
-export function Composer({ name, running, canStop, canAttach, onSend, onStop, p }: {
+export function Composer({ name, running, canStop, canAttach, onSend, onStop, draftKey, p }: {
   name: string; running: boolean; canStop: boolean; canAttach: boolean
-  onSend: (text: string, photos: Photo[]) => Promise<void>; onStop: () => void; p: Palette
+  onSend: (text: string, photos: Photo[]) => Promise<void>; onStop: () => void; draftKey?: string; p: Palette
 }) {
   const [text, setText] = useState('')
+  const [restored, setRestored] = useState(false)
   const [photos, setPhotos] = useState<Photo[]>([])
   const [preparing, setPreparing] = useState(false)
   const [pickError, setPickError] = useState<string | null>(null)
@@ -39,6 +41,20 @@ export function Composer({ name, running, canStop, canAttach, onSend, onStop, p 
   // hugging the keyboard.
   const insets = useSafeAreaInsets()
   const bottom = Math.max(insets.bottom, 10)
+  // Restore what was typed here last time, then keep the file in step with it.
+  useEffect(() => {
+    if (draftKey === undefined) { setRestored(true); return }
+    let alive = true
+    setRestored(false)
+    setText('')
+    void loadDraft(draftKey).then(saved => { if (alive) { setText(saved); setRestored(true) } })
+    return () => { alive = false }
+  }, [draftKey])
+  useEffect(() => {
+    if (!restored || draftKey === undefined) return
+    const timer = setTimeout(() => { void saveDraft(draftKey, text) }, 400)
+    return () => clearTimeout(timer)
+  }, [text, restored, draftKey])
   const draft = text.trim()
   const ready = (draft !== '' || photos.length > 0) && !preparing
   // The message shows in the chat at once; the composer is free for the next one.
@@ -115,3 +131,4 @@ const styles = StyleSheet.create({
   send: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   stop: { width: 32, height: 36, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
 })
+
