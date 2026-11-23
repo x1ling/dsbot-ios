@@ -30,7 +30,7 @@ const POLL_MS = 15_000
 // is the safe area, which the keyboard covers.
 const KEYBOARD_GAP = 6
 
-interface ChatPage { sessionId?: string; items: ChatItem[]; cursor: unknown }
+interface ChatPage { sessionId?: string; items: ChatItem[]; cursor: unknown; failure?: { code?: string; message?: string; status?: number; turn?: number } }
 interface Row { item: ChatItem; key: string; stamp?: string }
 
 // A refreshed page reuses the item objects that did not change, so the memoized
@@ -588,6 +588,11 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
         </Text>
       ) : null}
       {fileError ? <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4 }]} accessibilityRole="alert">{fileError}</Text> : null}
+      {page?.failure !== undefined ? (
+        <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4, marginHorizontal: 16 }]} accessibilityRole="alert">
+          {t('This run failed')}: {page.failure.code ?? ''}{page.failure.status !== undefined ? ` ${page.failure.status}` : ''}{page.failure.message ? ` · ${String(page.failure.message).slice(0, 200)}` : ''}
+        </Text>
+      ) : null}
       {page !== null && loadError !== null ? <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4, marginHorizontal: 16 }]} accessibilityRole="alert">{loadError}</Text> : null}
       {bot !== undefined && chatModel !== undefined && (chatReasoning?.efforts?.length ?? 0) > 0 ? (
         <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingBottom: 2 }}>

@@ -229,6 +229,7 @@ const MOBILE_ZH: Record<string, string> = {
   'Stop': '停止',
   'Plugins': '插件',
   'Tool calls': '工具调用',
+  'This run failed': '本轮运行失败',
   'Test notification': '测试通知',
   'Test Live Activity': '测试灵动岛',
   'Lab': '实验室',
