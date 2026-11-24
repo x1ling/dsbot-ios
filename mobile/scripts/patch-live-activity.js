@@ -8,6 +8,12 @@ const path = require('node:path')
 const file = path.join(__dirname, '..', 'node_modules', 'expo-live-activity', 'ios-files', 'LiveActivityWidget.swift')
 const MARK = 'DSBOT_STATE_ICON'
 
+// The module is optional: builds that dropped expo-live-activity simply skip the patch.
+if (!fs.existsSync(file)) {
+  console.log('live-activity module not installed, skip widget patch')
+  process.exit(0)
+}
+
 let source = fs.readFileSync(file, 'utf8')
 if (source.includes(MARK)) {
   console.log('live-activity widget already patched')
