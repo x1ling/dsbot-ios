@@ -130,6 +130,7 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
   const chatReasoning = useReasoning(chatModel?.ref, models)
   const chatLevel = bot !== undefined ? effortLabel(chatReasoning, bot.effort) : undefined
   const [effortOpen, setEffortOpen] = useState(false)
+  const [teamOn, setTeamOn] = useState<boolean | null>(null)
   const { p, dark } = useTheme()
   const insets = useSafeAreaInsets()
   const kind: ChatKind = room !== undefined ? 'room' : agent !== undefined ? 'agent' : 'bot'
@@ -599,6 +600,15 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
           <Pressable accessibilityRole="button" accessibilityLabel={t('Thinking')} onPress={() => setEffortOpen(true)}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: p.card, borderWidth: StyleSheet.hairlineWidth, borderColor: p.line }}>
             <Text style={[type.small, { color: p.ink2 }]}>{t('Thinking')} · {chatLevel ?? t('Default')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {bot !== undefined ? (
+        <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingBottom: 2, gap: 8 }}>
+          <Pressable accessibilityRole="switch" accessibilityState={{ checked: teamOn === true }} accessibilityLabel={t('Agent teamwork')}
+            onPress={() => { const next = teamOn !== true; setTeamOn(next); void call('team-mode', { sessionId, enabled: next }).then((value: unknown) => { const v = value as { enabled?: boolean } | undefined; if (v !== undefined && typeof v.enabled === 'boolean') setTeamOn(v.enabled) }).catch(() => setTeamOn(!next)) }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: p.card, borderWidth: StyleSheet.hairlineWidth, borderColor: teamOn === true ? p.accent : p.line }}>
+            <Text style={[type.small, { color: teamOn === true ? p.accent : p.ink2 }]}>{t('Agent teamwork')} · {teamOn === true ? t('On') : t('Off')}</Text>
           </Pressable>
         </View>
       ) : null}

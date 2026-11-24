@@ -9,6 +9,9 @@ const ZH = DICTIONARY.zh as Record<string, string>
 const MOBILE_SENSE = new Set(['New', 'Light', 'Back', 'Unknown'])
 
 const MOBILE_ZH: Record<string, string> = {
+  'Agent teamwork': '智能体团队协作',
+  'On': '开',
+  'Off': '关',
   "This is the phone app's code. In Settings → Phone on the computer, use Open in a browser or Copy browser link.": '这是手机 App 的配对码。请在电脑的设置 → 手机中选择“在浏览器中打开”或“复制浏览器链接”。',
   'This is a browser pairing link. In Settings → Phone on the computer, scan the QR code to pair the phone app.': '这是浏览器配对链接。请在电脑的设置 → 手机中扫描二维码以配对手机 App。',
   'Not available from a browser. Use the phone app or the computer.': '浏览器不支持此操作。请使用手机 App 或电脑。',
