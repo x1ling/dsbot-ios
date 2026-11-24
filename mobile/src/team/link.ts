@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import type { RpcClient } from '../../../link/src/index.ts'
 import { callBot, callBotState, openLink, type TeamState } from '../connection.ts'
@@ -10,7 +10,7 @@ import { t } from '../ui/i18n.ts'
 import { workPhrase } from '../ui/phrases.ts'
 import type { PhoneIdentity, SavedComputer } from '../store.ts'
 import { showDoneActivity, showRunningActivity } from './live.ts'
-import { askNotifications, notifyDone } from './notify.ts'
+import { askNotifications } from './notify.ts'
 
 // Feed events keep the app live; the poll only stays as a foreground fallback.
 const POLL_MS = 15_000
@@ -145,7 +145,7 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
     if (seen !== null) {
       for (const bot of next.bots ?? []) {
         const task = (bot.tasks ?? []).find(entry => (entry.status === 'completed' || entry.status === 'failed') && !seen.has(entry.id))
-        if (task !== undefined) { void showDoneActivity(bot.name, task.title, task.status === 'failed'); void notifyDone(bot.name, task.title); break }
+        if (task !== undefined) { void showDoneActivity(bot.name, task.title, task.status === 'failed'); break }
       }
     }
     if (seenWorking !== null) {

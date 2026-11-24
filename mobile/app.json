@@ -1,4 +1,4 @@
-{
+﻿{
   "expo": {
     "name": "DS Bot",
     "slug": "dsbot",
@@ -74,6 +74,6 @@
         }
       ]
     ],
-    "version": "0.4.7"
+    "version": "0.4.8"
   }
 }
