@@ -19,7 +19,6 @@ import { workPhrase } from '../ui/phrases.ts'
 import { ActionRow, Dock } from './chat/dock.tsx'
 import { learningForChat } from './chat/learning.ts'
 import { Composer, type Photo } from './chat/composer.tsx'
-import { EffortBar, effortLabel, modelOf, useReasoning } from './model-menu.tsx'
 import { Actions, Item, keysOf, PhotoViewer, PhotoViewerCtx, type ChatItem, type FileRef, type ImageRef } from './chat/items.tsx'
 import { bumpMarkdownImageCache } from './chat/markdown.tsx'
 
@@ -30,7 +29,7 @@ const POLL_MS = 15_000
 // is the safe area, which the keyboard covers.
 const KEYBOARD_GAP = 6
 
-interface ChatPage { sessionId?: string; items: ChatItem[]; cursor: unknown; failure?: { code?: string; message?: string; status?: number; turn?: number } }
+interface ChatPage { sessionId?: string; items: ChatItem[]; cursor: unknown }
 interface Row { item: ChatItem; key: string; stamp?: string }
 
 // A refreshed page reuses the item objects that did not change, so the memoized
@@ -124,13 +123,7 @@ const sameMessage = (item: ChatItem, sent: ChatItem) =>
 // shell's own (back row or pill).
 export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; room?: Room; agent?: Agent; header: React.ReactNode; onMissing?: () => void }) {
   const navigation = useNavigation<any>()
-  const { team, call, refresh: refreshTeam, computer, hello, latency } = useTeam()
-  const models = (team?.models ?? []) as never[]
-  const chatModel = bot !== undefined ? modelOf(bot, models) : undefined
-  const chatReasoning = useReasoning(chatModel?.ref, models)
-  const chatLevel = bot !== undefined ? effortLabel(chatReasoning, bot.effort) : undefined
-  const [effortOpen, setEffortOpen] = useState(false)
-  const [teamOn, setTeamOn] = useState<boolean | null>(null)
+  const { team, call, refresh: refreshTeam, computer, hello } = useTeam()
   const { p, dark } = useTheme()
   const insets = useSafeAreaInsets()
   const kind: ChatKind = room !== undefined ? 'room' : agent !== undefined ? 'agent' : 'bot'
@@ -327,7 +320,6 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
   const [readerText, setReaderText] = useState<string | null>(null)
   const [readerTitle, setReaderTitle] = useState<string | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
-  const [saving, setSaving] = useState<{ name: string; loaded: number; total: number } | null>(null)
   const [photos, setPhotos] = useState<{ sessionId: string; refs: ImageRef[]; index: number } | null>(null)
   // Save hands the file to the phone: the host sends its bytes, the app writes them
   // to a cache file, and the system share sheet lets Android put it in Downloads or
@@ -339,29 +331,22 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
       ? { sessionId: targetSession, attachmentId: file.attachmentId }
       : { sessionId: targetSession, seq: file.seq, index: file.index }
     void (async () => {
-      setSaving({ name: file.name, loaded: 0, total: 0 })
       try {
-        const saved = await downloadFile(call, payload, (loaded, total) => setSaving({ name: file.name, loaded, total }))
+        const saved = await downloadFile(call, payload)
         await shareFile(saved)
       } catch (failure) {
         const msg = (failure as { message?: string })?.message
         setFileError(msg ?? t('Could not save this file'))
-      } finally {
-        setSaving(null)
       }
     })()
   }, [call, sessionId])
-  const openFile = useCallback((file: FileRef) => {
-    // Presented files (deliverables) carry no attachmentId: the host only serves them
-    // through the chunked download, so tapping such a card saves it instead of asking
-    // for a reader that cannot see it.
-    if (file.attachmentId === undefined) { saveFile(file); return }
+  const openFile = useCallback((file: { name: string; attachmentId?: string }) => {
     void call('file-text', { file }).then(result => {
       const read = result as { text?: string; truncated?: boolean } | string
       setReaderTitle(file.name)
       setReaderText(typeof read === 'string' ? read : read?.text ?? '')
     }, (failure: { code?: string; message?: string }) => setFileError(failure?.message ?? t('This file cannot be read here')))
-  }, [call, saveFile])
+  }, [call])
   // One stable toggle per steps row, so a memoized row is not redrawn for a new closure.
   const toggles = useRef(new Map<string, () => void>())
   const toggleOf = (key: string) => {
@@ -492,13 +477,6 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
   const memberKey = JSON.stringify((team?.bots ?? []).map(entry => [entry.id, entry.name, entry.color, entry.avatar?.shape, entry.avatar?.imageRef ?? entry.avatar?.image?.length]))
   const botsById = useMemo(() => new Map((team?.bots ?? []).map(entry => [entry.id, entry])), [memberKey])
   const canStop = room !== undefined ? roomWork.length > 0 : running
-  // A group's members, offered by the composer's "@" so one Bot can be addressed
-  // without typing its exact name; the room's own routing reads the mention.
-  const mentionBots = useMemo(() => {
-    if (room === undefined) return undefined
-    const ids = Array.isArray(room.members) ? room.members : []
-    return (team?.bots ?? []).filter(entry => ids.includes(entry.id)).map(entry => ({ id: entry.id, name: entry.name ?? '' }))
-  }, [room, team?.bots])
   const inRoom = room !== undefined
   const admin = room?.admin
 
@@ -581,51 +559,9 @@ export function ChatView({ bot, room, agent, header, onMissing }: { bot?: Bot; r
       {bot !== undefined ? <ComputerCards bot={bot} p={p} /> : null}
       {running && doingBot ? <ActionRow bot={doingBot} doing={doingText} p={p} dark={dark} /> : null}
       <Dock question={question} sessionId={sessionId} approvals={approvals} learning={learning} secrets={secrets} connectorRequests={connectorRequests} botName={bot?.name} onOpenConnector={connectorId => { if (connectorCanConnectOnMobile(connectorId)) navigation.navigate('Settings', { screen: 'Connectors', params: { focusId: connectorId }, initial: false }) }} btw={btw} handoff={browserHold} view={team?.views?.[sessionId]} call={call} p={p} expanded={expandedKey} onExpand={setExpandedKey} />
-      {saving ? (
-        <Text style={[type.small, { color: p.ink2, textAlign: 'center', marginBottom: 4 }]}>
-          {saving.total > 0
-            ? `${t('Saving')} ${saving.name} · ${Math.min(100, Math.round((saving.loaded / saving.total) * 100))}%`
-            : `${t('Saving')} ${saving.name}…`}
-        </Text>
-      ) : null}
       {fileError ? <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4 }]} accessibilityRole="alert">{fileError}</Text> : null}
-      {page?.failure !== undefined ? (
-        <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4, marginHorizontal: 16 }]} accessibilityRole="alert">
-          {t('This run failed')}: {page.failure.code ?? ''}{page.failure.status !== undefined ? ` ${page.failure.status}` : ''}{page.failure.message ? ` · ${String(page.failure.message).slice(0, 200)}` : ''}
-        </Text>
-      ) : null}
       {page !== null && loadError !== null ? <Text style={[type.small, { color: p.danger, textAlign: 'center', marginBottom: 4, marginHorizontal: 16 }]} accessibilityRole="alert">{loadError}</Text> : null}
-      {bot !== undefined && chatModel !== undefined && (chatReasoning?.efforts?.length ?? 0) > 0 ? (
-        <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingBottom: 2 }}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('Thinking')} onPress={() => setEffortOpen(true)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: p.card, borderWidth: StyleSheet.hairlineWidth, borderColor: p.line }}>
-            <Text style={[type.small, { color: p.ink2 }]}>{t('Thinking')} · {chatLevel ?? t('Default')}</Text>
-          </Pressable>
-        </View>
-      ) : null}
-      {bot !== undefined ? (
-        <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingBottom: 2, gap: 8 }}>
-          <Pressable accessibilityRole="switch" accessibilityState={{ checked: teamOn === true }} accessibilityLabel={t('Agent teamwork')}
-            onPress={() => { const next = teamOn !== true; setTeamOn(next); void call('team-mode', { sessionId, enabled: next }).then((value: unknown) => { const v = value as { enabled?: boolean } | undefined; if (v !== undefined && typeof v.enabled === 'boolean') setTeamOn(v.enabled) }).catch(() => setTeamOn(!next)) }}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: p.card, borderWidth: StyleSheet.hairlineWidth, borderColor: teamOn === true ? p.accent : p.line }}>
-            <Text style={[type.small, { color: teamOn === true ? p.accent : p.ink2 }]}>{t('Agent teamwork')} · {teamOn === true ? t('On') : t('Off')}</Text>
-          </Pressable>
-        </View>
-      ) : null}
-      {latency != null ? (
-        <View pointerEvents="none" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5, paddingHorizontal: 18, paddingBottom: 3 }}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: latency < 150 ? p.green : latency < 400 ? '#E5A000' : p.danger }} />
-          <Text style={[type.small, { color: p.ink3, fontVariant: ['tabular-nums'] }]}>{latency} ms</Text>
-        </View>
-      ) : null}
-      <Composer name={bot?.name ?? room?.name ?? agent?.name ?? ''} running={running} canStop={canStop} canAttach={hello?.capabilities?.includes('send-images') === true} onSend={send} onStop={stop} draftKey={chatKey} mention={mentionBots} p={p} />
-      <Modal visible={effortOpen} transparent animationType="slide" onRequestClose={() => setEffortOpen(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' }} onPress={() => setEffortOpen(false)} accessibilityLabel={t('Close')} />
-        <View style={{ backgroundColor: p.card, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: insets.bottom + 8 }}>
-          <EffortBar reasoning={chatReasoning} current={chatReasoning?.efforts?.some(e => e.id === bot?.effort) ? bot?.effort : undefined}
-            onPick={effort => { if (bot !== undefined) void call('update-bot', { id: bot.id, effort: effort ?? null }); setEffortOpen(false) }} />
-        </View>
-      </Modal>
+      <Composer name={bot?.name ?? room?.name ?? agent?.name ?? ''} running={running} canStop={canStop} canAttach={hello?.capabilities?.includes('send-images') === true} onSend={send} onStop={stop} p={p} />
       <Actions visible={menuText !== null} text={menuText ?? ''} p={p}
         onClose={() => setMenuText(null)}
         onSelect={() => { setReaderTitle(null); setReaderText(menuText); setMenuText(null) }} />

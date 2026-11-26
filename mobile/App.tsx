@@ -1,6 +1,5 @@
 import 'react-native-gesture-handler'
 import { StatusBar } from 'expo-status-bar'
-import Constants from 'expo-constants'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Linking, Platform, Text, useColorScheme, View } from 'react-native'
 import { takePairingFragment } from './src/team/pair-fragment.ts'
@@ -144,17 +143,6 @@ function Boot({ lang }: { lang?: string }) {
 export default function App() {
   const dark = useDark()
   const lang = useLang()
-  // LAB_AUTO_TEST: the Lab build proves the Live Activity by itself on launch, so a
-  // USB install can verify Dynamic Island without anyone tapping the settings row.
-  useEffect(() => {
-    if (!(Constants.expoConfig?.name ?? '').includes('Lab')) return
-    const timer = setTimeout(() => {
-      void import('./src/team/live.ts')
-        .then(m => m.showDoneActivity('DS Bot', '灵动岛自检：任务完成', false))
-        .catch(() => {})
-    }, 4000)
-    return () => clearTimeout(timer)
-  }, [])
   const rootTheme = useMemo(() => ({ dark, p: palette(dark) }), [dark])
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

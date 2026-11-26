@@ -2,8 +2,6 @@ import { Children, Fragment, useCallback, useEffect, useState } from 'react'
 import { AppState, Linking, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { useTeam } from '../team/context.tsx'
 import { androidNotificationStatus } from '../team/notifications.ts'
-import { showDoneActivity } from '../team/live.ts'
-import { notifyDone } from '../team/notify.ts'
 import { t, getLang, setLang } from '../ui/i18n.ts'
 import { ChevronRightIcon } from '../ui/icons.tsx'
 import { readPrefs, writePrefs } from '../store.ts'
@@ -107,16 +105,11 @@ export function Settings({ navigation }: { navigation?: any }) {
         <Row label={t('Models')} onPress={() => navigation?.navigate('Providers')} />
         <Row label={t('Connectors')} onPress={() => navigation?.navigate('Connectors')} />
         <Row label={t('Capabilities')} onPress={() => navigation?.navigate('Capabilities')} />
-        <Row label={t('Plugins')} onPress={() => navigation?.navigate('Plugins')} />
         <Row label={t('Usage')} onPress={() => navigation?.navigate('TeamUsage')} />
         <Row label={t('Secrets')} onPress={() => navigation?.navigate('Secrets')} />
         <Row label={t('Location')} onPress={() => navigation?.navigate('Location')} />
         <Row label={t('Updates & diagnostics')} onPress={() => navigation?.navigate('Updates')} />
         <Row label={t('About DS Bot')} onPress={() => navigation?.navigate('About')} />
-      </Section>
-      <Section label={t('Lab')}>
-        <Row label={t('Test Live Activity')} onPress={() => { void showDoneActivity('DS Bot Lab', '这是一条测试：任务完成') }} />
-        <Row label={t('Test notification')} onPress={() => { void notifyDone('DS Bot Lab', '这是一条测试通知') }} />
       </Section>
     </ScrollView>
   )

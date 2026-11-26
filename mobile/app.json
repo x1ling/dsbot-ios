@@ -10,23 +10,16 @@
       "themeColor": "#fcfcfc",
       "favicon": "./assets/icon.png"
     },
-    "experiments": {
-      "baseUrl": "/web"
-    },
+    "experiments": { "baseUrl": "/web" },
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.x1ling.dsbot",
+      "bundleIdentifier": "io.github.fei2411.dsbot",
       "infoPlist": {
-        "CFBundleLocalizations": [
-          "en",
-          "zh-Hans"
-        ],
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSSupportsLiveActivities": true,
-        "NSSupportsLiveActivitiesFrequentUpdates": true
+        "CFBundleLocalizations": ["en", "zh-Hans"],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -37,7 +30,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.x1ling.dsbot",
+      "package": "io.github.fei2411.dsbot",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
       ]
@@ -64,7 +57,6 @@
           }
         }
       ]
-    ],
-    "version": "0.4.9"
+    ]
   }
 }

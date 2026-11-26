@@ -1,4 +1,4 @@
-﻿import {
+import {
   createRpcRequest,
   decodeMessage,
   encodeMessage,
@@ -43,7 +43,7 @@ export class RpcClient {
   private readonly transport: RemoteTransport
   private readonly timeoutMs: number
 
-  constructor(transport: RemoteTransport, timeoutMs = 60_000) {
+  constructor(transport: RemoteTransport, timeoutMs = 30_000) {
     this.transport = transport
     this.timeoutMs = timeoutMs
   }

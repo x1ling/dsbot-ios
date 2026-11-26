@@ -4,7 +4,6 @@ import type { Agent, Bot, Room } from '../connection.ts'
 import { useTeam } from '../team/context.tsx'
 import { botHasPending, roomHasPending } from '../nav/pending.ts'
 import { isUnread, seenVersion, subscribeSeen } from '../team/seen.ts'
-import { recencyOf, recencyVersion, subscribeRecency } from '../team/recency.ts'
 import { t } from '../ui/i18n.ts'
 import { radius, type as typeScale, useTheme } from '../ui/tokens.ts'
 import { Avatar, RoomAvatar } from '../ui/marks.tsx'
@@ -22,11 +21,6 @@ export function TeamList({ onOpen, query = '', current }: { onOpen: (target: Cha
   const { p, dark } = useTheme()
   const hostId = computer?.hostDeviceId ?? ''
   useSyncExternalStore(subscribeSeen, seenVersion)
-  useSyncExternalStore(subscribeRecency, recencyVersion)
-  const rec = recencyVersion()
-  // The host's lastAt can lag behind the notice feed; the newer of the two wins so
-  // the Bot that just spoke floats to the top of the drawer.
-  const latest = (item: Bot | Room) => Math.max(item.lastAt ?? item.createdAt ?? 0, recencyOf(item.id))
 
   const bots = Array.isArray(team?.bots) ? team.bots : []
   const mains = new Set(team?.mainBotIds ?? [])
@@ -47,8 +41,8 @@ export function TeamList({ onOpen, query = '', current }: { onOpen: (target: Cha
     ]
     return list
       .filter(entry => needle === '' || (entry.item.name ?? '').toLowerCase().includes(needle))
-      .sort((a, b) => Number(Boolean(b.item.pinned)) - Number(Boolean(a.item.pinned)) || latest(b.item) - latest(a.item))
-  }, [bots, team?.rooms, team?.mainBotIds, needle, rec])
+      .sort((a, b) => Number(Boolean(b.item.pinned)) - Number(Boolean(a.item.pinned)) || (b.item.lastAt ?? b.item.createdAt ?? 0) - (a.item.lastAt ?? a.item.createdAt ?? 0))
+  }, [bots, team?.rooms, team?.mainBotIds, needle])
 
   const preview = (bot: Bot): string | undefined => {
     const sessionId = bot.sessionId ?? bot.id

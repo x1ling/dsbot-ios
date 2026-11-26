@@ -169,13 +169,6 @@ export async function openLink(computer: SavedComputer, identity: PhoneIdentity,
     identityKey: identity.publicKey,
     accessToken: identity.accessToken,
     targetDeviceId: computer.hostDeviceId,
-    // Mobile networks are slow to wake and carrier NAT drops idle sockets: allow a
-    // slower handshake, probe sooner (keeps the NAT mapping alive) and wait longer
-    // for the probe's answer before declaring the link dead.
-    handshakeTimeoutMs: 20_000,
-    watchdogIntervalMs: 5_000,
-    watchdogSilenceMs: 10_000,
-    probeTimeoutMs: 30_000,
   })
   const secure = new SecureTransport(relay, identity, { deviceId: computer.hostDeviceId, identityKey: computer.hostKey }, {
     hello: { name: phoneName(Platform.OS, Platform.constants as Parameters<typeof phoneName>[1]), ...(pairingCode === undefined ? {} : { pairingCode }) },

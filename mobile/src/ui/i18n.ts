@@ -9,9 +9,6 @@ const ZH = DICTIONARY.zh as Record<string, string>
 const MOBILE_SENSE = new Set(['New', 'Light', 'Back', 'Unknown'])
 
 const MOBILE_ZH: Record<string, string> = {
-  'Agent teamwork': '智能体团队协作',
-  'On': '开',
-  'Off': '关',
   "This is the phone app's code. In Settings → Phone on the computer, use Open in a browser or Copy browser link.": '这是手机 App 的配对码。请在电脑的设置 → 手机中选择“在浏览器中打开”或“复制浏览器链接”。',
   'This is a browser pairing link. In Settings → Phone on the computer, scan the QR code to pair the phone app.': '这是浏览器配对链接。请在电脑的设置 → 手机中扫描二维码以配对手机 App。',
   'Not available from a browser. Use the phone app or the computer.': '浏览器不支持此操作。请使用手机 App 或电脑。',
@@ -230,23 +227,6 @@ const MOBILE_ZH: Record<string, string> = {
   'This approval is no longer open.': '这项批准已经关闭了。',
   'Submit': '提交',
   'Stop': '停止',
-  'Plugins': '插件',
-  'Tool calls': '工具调用',
-  'This run failed': '本轮运行失败',
-  'Test notification': '测试通知',
-  'Test Live Activity': '测试灵动岛',
-  'Lab': '实验室',
-  'No README': '这个插件没有附带 README，作者没写说明。',
-  'Refresh': '刷新',
-  'Loading…': '加载中…',
-  'No plugins installed': '还没有安装插件',
-  '{count} plugins': '{count} 个插件',
-  'Installed, not active': '已安装，未启用',
-  'Thinking': '推理',
-  'Default': '默认',
-  'Talk over…': '插话…',
-  'Saving': '保存中',
-  'Mention a Bot': '@ 一个 Bot',
   'Search the team': '搜索团队',
   'Members': '成员',
   'A secret is needed': '需要一个密钥',
@@ -340,4 +320,3 @@ export function clockLabel(time: number, now = Date.now()): string {
   return isZh() ? `${year}${d.getMonth() + 1}月${d.getDate()}日 ${WEEK_ZH[d.getDay()]} ${clock(time)}` : `${WEEK_EN[d.getDay()]}, ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}${year} ${clock(time)}`
 }
 export const messageClock = (time: number, now = Date.now()) => (daysBefore(time, now) === 0 ? clock(time) : clockLabel(time, now))
-

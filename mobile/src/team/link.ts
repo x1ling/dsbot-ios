@@ -1,16 +1,12 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import type { RpcClient } from '../../../link/src/index.ts'
 import { callBot, callBotState, openLink, type TeamState } from '../connection.ts'
 import { ensureUnlock } from './gate'
 import { createNoticeCursor, type NoticeCursorAnswer } from './notices.ts'
-import { bumpRecency } from './recency.ts'
 import { OPTIMISTIC, optimistic, withWrites, type Write } from './optimistic.ts'
 import { t } from '../ui/i18n.ts'
-import { workPhrase } from '../ui/phrases.ts'
 import type { PhoneIdentity, SavedComputer } from '../store.ts'
-import { showDoneActivity, showRunningActivity } from './live.ts'
-import { askNotifications } from './notify.ts'
 
 // Feed events keep the app live; the poll only stays as a foreground fallback.
 const POLL_MS = 15_000
@@ -56,19 +52,10 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
   const [linked, setLinked] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hello, setHello] = useState<Hello | null>(null)
-  // Round trip of a cheap `hello` call, in ms. Doubles as the keep-alive that
-  // holds the carrier NAT mapping open on cellular.
-  const [latency, setLatency] = useState<number | null>(null)
   const clientRef = useRef<RpcClient | undefined>(undefined)
   const revision = useRef<number>(-1)
   const writes = useRef<Write[]>([])
   const liveKey = useRef<string | undefined>(undefined)
-  // Task ids already seen as finished: a fresh finish lights the Dynamic Island,
-  // the first full read only seeds the set (old history must stay quiet).
-  const finishedTasks = useRef<Set<string> | null>(null)
-  const runningTasks = useRef<Set<string> | null>(null)
-  // The step each running Bot is on, so the island can follow it as it moves.
-  const runningPhrase = useRef<Map<string, string> | null>(null)
   const pollRef = useRef<() => void>(() => {})
   const feedHandlers = useRef(new Set<FeedHandler>())
   const hostRef = useRef(computer.hostDeviceId)
@@ -107,7 +94,7 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
   }
 
   // Every bot whose photo came as a ref gets the cached image, or keeps the
-  // previous team's photo while the fetch runs 鈥?never a blank avatar.
+  // previous team's photo while the fetch runs — never a blank avatar.
   function fillPhotos(team: TeamState, prev: TeamState | null): TeamState {
     if (!Array.isArray(team.bots)) return team
     const bots = team.bots.map(bot => {
@@ -128,47 +115,6 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
     if (next.revision < revision.current) return
     revision.current = next.revision
     if (typeof next.liveKey === 'string') liveKey.current = next.liveKey
-    // A task that just started or finished lights the Dynamic Island; the first
-    // full read only records what already happened.
-    const done = new Set<string>()
-    const working = new Set<string>()
-    for (const bot of next.bots ?? []) {
-      for (const task of bot.tasks ?? []) {
-        if (task.status === 'completed' || task.status === 'failed') done.add(task.id)
-        else if (task.status === 'running' || task.status === 'pending') working.add(task.id)
-      }
-    }
-    const seen = finishedTasks.current
-    finishedTasks.current = done
-    const seenWorking = runningTasks.current
-    runningTasks.current = working
-    if (seen !== null) {
-      for (const bot of next.bots ?? []) {
-        const task = (bot.tasks ?? []).find(entry => (entry.status === 'completed' || entry.status === 'failed') && !seen.has(entry.id))
-        if (task !== undefined) { void showDoneActivity(bot.name, task.title, task.status === 'failed'); break }
-      }
-    }
-    if (seenWorking !== null) {
-      for (const bot of next.bots ?? []) {
-        const task = (bot.tasks ?? []).find(entry => (entry.status === 'running' || entry.status === 'pending') && !seenWorking.has(entry.id))
-        if (task !== undefined) { void showRunningActivity(bot.name, task.title); break }
-      }
-    }
-    // Follow the step: every time the Bot's work phrase changes (thinking, running a
-    // command, writing a file...), the live activity's subtitle moves with it.
-    const phrases = new Map<string, string>()
-    for (const [botId, doing] of Object.entries((next.work?.bots ?? {}) as Record<string, never>)) {
-      phrases.set(botId, workPhrase(doing as never))
-    }
-    const wasPhrase = runningPhrase.current
-    runningPhrase.current = phrases
-    if (wasPhrase !== null) {
-      for (const [botId, phrase] of phrases) {
-        if (wasPhrase.get(botId) === phrase) continue
-        const bot = (next.bots ?? []).find(entry => entry.id === botId)
-        if (bot !== undefined) void showRunningActivity(bot.name, phrase)
-      }
-    }
     setTeam(prev => {
       const merged = next.unchanged === true && prev !== null ? { ...prev, ...next } : next
       return fillPhotos(withWrites(merged, writes.current), prev)
@@ -210,7 +156,6 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
 
   useEffect(() => {
     let stopped = false
-    void askNotifications()
     let connecting = false
     let hadLink = false
     let failStreak = 0
@@ -225,7 +170,6 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
     setLinked(false)
     setError(null)
     setHello(null)
-    setLatency(null)
     // One pending timer: every feed event polls, and each poll would otherwise start another loop.
     const later = (run: () => void, ms: number) => { clearTimeout(timer); if (!stopped) timer = setTimeout(run, ms) }
     const scheduleReconnect = () => {
@@ -237,19 +181,6 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
     // read now and at most one more after it, not a pile of reads over a slow link.
     let reading = false
     let again = false
-    let pingTimer: ReturnType<typeof setInterval> | undefined
-    // The badge is the phone's own round trip to the computer, not a Bot call: a Bot
-    // busy with a long Turn would queue a hello behind its work and read as seconds
-    // of latency that the network never had.
-    const httpBase = computer.server.replace(/^wss:\/\//, 'https://').replace(/^ws:\/\//, 'http://').replace(/\/v1\/link\/?$/, '')
-    const ping = async () => {
-      const started = Date.now()
-      try {
-        await fetch(`${httpBase}/web/metadata.json?ping=${started}`, { cache: 'no-store' })
-        if (!stopped) setLatency(Date.now() - started)
-      } catch { /* the transport watchdog owns a dead link */ }
-    }
-    const stopPing = () => { if (pingTimer !== undefined) { clearInterval(pingTimer); pingTimer = undefined } }
     const poll = async () => {
       const client = clientRef.current
       if (stopped || client === undefined) return
@@ -303,17 +234,10 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
         setHello(helloResult)
         setOnline(true)
         setError(null)
-        stopPing()
-        void ping()
-        pingTimer = setInterval(() => { void ping() }, 8_000)
         const { sameBoot, since } = noticeCursor.connect(helloResult)
         client.onEvent(({ event, data }: { event: string; data: any }) => {
           if (stopped || clientRef.current !== client) return
-          if (event === 'notice') {
-            if (!noticeCursor.acceptLive(helloResult.boot, data)) return
-            const seen = data as { botId?: string; roomId?: string; time?: number }
-            bumpRecency(seen.botId ?? seen.roomId, typeof seen.time === 'number' ? seen.time : Date.now())
-          }
+          if (event === 'notice' && !noticeCursor.acceptLive(helloResult.boot, data)) return
           if (event === 'revision' || event === 'live') void poll()
           for (const handler of feedHandlers.current) handler(event, data)
         })
@@ -324,8 +248,6 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
           else {
             if (replay.length > 0) void poll()
             for (const entry of replay) {
-              const seen = entry as { botId?: string; roomId?: string; time?: number }
-              bumpRecency(seen.botId ?? seen.roomId, typeof seen.time === 'number' ? seen.time : Date.now())
               for (const handler of feedHandlers.current) handler('notice', entry)
             }
           }
@@ -336,8 +258,6 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
           clientRef.current = undefined
           setOnline(false)
           setLinked(false)
-          stopPing()
-          setLatency(null)
           clearTimeout(timer)
           scheduleReconnect()
         })
@@ -364,7 +284,6 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
     return () => {
       stopped = true
       clearTimeout(timer)
-      stopPing()
       foreground.remove()
       void activeClient?.close()
       if (clientRef.current === activeClient) clientRef.current = undefined
@@ -382,7 +301,6 @@ export function useTeamLink(computer: SavedComputer, identity: PhoneIdentity) {
     refresh,
     clientRef,
     hello: switched ? null : hello,
-    latency: switched ? null : latency,
     onFeed,
   }
 }
@@ -404,5 +322,3 @@ function localized(failure: unknown): unknown {
   if (failure instanceof Error) failure.message = t(failure.message)
   return failure
 }
-
-
