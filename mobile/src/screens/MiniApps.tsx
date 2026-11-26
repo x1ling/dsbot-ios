@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTeam } from '../team/context.tsx'
 import { t } from '../ui/i18n.ts'
 import { radius, type as typeScale, useTheme } from '../ui/tokens.ts'
@@ -12,6 +13,7 @@ const BASE = 'https://1xfrakazo.duckdns.org:5173/miniapps/'
 export function MiniApps({ navigation }: { navigation: { goBack: () => void } }) {
   const { p } = useTheme()
   const { call } = useTeam()
+  const insets = useSafeAreaInsets()
   const [items, setItems] = useState<MiniApp[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -40,9 +42,9 @@ export function MiniApps({ navigation }: { navigation: { goBack: () => void } })
 
   return (
     <View style={{ flex: 1, backgroundColor: p.main }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10 }}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('Back')} onPress={() => navigation.goBack()} hitSlop={8} style={{ paddingRight: 12 }}>
-          <Text style={{ color: p.accent, fontSize: 17 }}>‹</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: insets.top + 8, paddingBottom: 10 }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Back')} onPress={() => navigation.goBack()} hitSlop={12} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}>
+          <Text style={{ color: p.accent, fontSize: 26, lineHeight: 30 }}>‹</Text>
         </Pressable>
         <Text style={{ color: p.ink, flex: 1, fontSize: 20, fontWeight: '600' }}>{t('Mini Apps')}</Text>
         {busy ? <ActivityIndicator size="small" color={p.ink3} /> : null}
