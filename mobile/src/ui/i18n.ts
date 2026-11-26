@@ -113,6 +113,8 @@ const MOBILE_ZH: Record<string, string> = {
   'Remove photo': '移除照片',
   'Another Bot has this name.': '已经有 Bot 叫这个名字。',
   'Back': '返回',
+  'Mini Apps': '小程序',
+  'No Mini Apps yet. Ask any Bot to build one.': '还没有小程序。跟任意 Bot 说一句，它就给你做一个。',
   'Browser': '浏览器', 'This Bot has no open browser': '这个 Bot 没有打开的浏览器',
   'Take over': '接管', 'Give back': '交还', 'Done': '完成', 'Skip': '跳过',
   'Browser handoff': '浏览器交接', 'View': '查看',

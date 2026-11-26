@@ -20,6 +20,7 @@ import { TeamList, type ChatTarget } from '../screens/TeamList.tsx'
 import { BotDetails, BotEdit, NewBot, NewGroup, GroupDetails, GroupSettings, Memory, Schedules, Folder, Usage, Computers, Secrets } from '../screens/manage.tsx'
 import { Providers, Connectors, Capabilities, TeamUsage, Location, Updates, About, Plugins } from '../screens/settings-pages.tsx'
 import { Side } from '../screens/side.tsx'
+import { MiniApps } from '../screens/MiniApps.tsx'
 import { BotBrowser } from '../screens/manage.tsx'
 import type { Agent, Bot, Room } from '../connection.ts'
 import { pendingCountOf } from './pending.ts'
@@ -131,7 +132,10 @@ function DrawerContent() {
           </View>
         </Pressable>
       </Modal>
-      <View style={[styles.foot, { paddingBottom: insets.bottom + 8 }]}>
+      <View style={[styles.foot, { paddingBottom: insets.bottom + 8, flexDirection: 'row', gap: 10 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Mini Apps')} onPress={() => { drawer.close(); navigation.navigate('MiniApps') }} hitSlop={4} style={[styles.round, { borderColor: p.line, backgroundColor: p.card }]}>
+          <Text style={{ fontSize: 16 }}>🧩</Text>
+        </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={t('Settings')} onPress={() => open({ kind: 'settings' })} hitSlop={4} style={[styles.round, { borderColor: p.line, backgroundColor: p.card }]}>
           <GearIcon size={18} color={p.ink2} />
         </Pressable>
@@ -340,6 +344,7 @@ function Inner({ initial }: { initial: ChatTarget | null }) {
       <Stack.Screen name="Usage" component={Usage} />
       <Stack.Screen name="BotBrowser">{({ route, navigation }: any) => <BotBrowser bot={route.params.bot} navigation={navigation} />}</Stack.Screen>
       <Stack.Screen name="Side">{({ route, navigation }: any) => <Side bot={route.params.bot} sessionId={route.params.sessionId} navigation={navigation} />}</Stack.Screen>
+      <Stack.Screen name="MiniApps">{({ navigation }: any) => <MiniApps navigation={navigation} />}</Stack.Screen>
       <Stack.Group screenOptions={{ presentation: 'modal', animation: RISE }}>
         <Stack.Screen name="Settings" component={SettingsSheet} />
         <Stack.Screen name="Needs" component={NeedsSheet} />
