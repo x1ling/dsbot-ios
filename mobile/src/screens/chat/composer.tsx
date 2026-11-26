@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics'
 import * as ImagePicker from 'expo-image-picker'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { loadDraft, saveDraft } from '../../team/draft.ts'
 import { t } from '../../ui/i18n.ts'
@@ -38,6 +38,7 @@ export function Composer({ name, running, canStop, canAttach, onSend, onStop, dr
   const [photos, setPhotos] = useState<Photo[]>([])
   const [preparing, setPreparing] = useState(false)
   const [pickError, setPickError] = useState<string | null>(null)
+  const [zoom, setZoom] = useState<string | null>(null)
   // Float above the home indicator (iOS) or the gesture bar (Android, drawn edge to
   // edge). The matching negative keyboardVerticalOffset in ChatView keeps the card
   // hugging the keyboard.
@@ -88,7 +89,9 @@ export function Composer({ name, running, canStop, canAttach, onSend, onStop, dr
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.photos} keyboardShouldPersistTaps="handled">
             {photos.map(photo => (
               <View key={photo.uri}>
-                <Image source={{ uri: photo.uri }} style={[styles.photo, { backgroundColor: p.hover }]} />
+                <Pressable accessibilityRole="imagebutton" accessibilityLabel={t('Image')} onPress={() => setZoom(photo.uri)}>
+                  <Image source={{ uri: photo.uri }} style={[styles.photo, { backgroundColor: p.hover }]} />
+                </Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={t('Remove')} hitSlop={8} onPress={() => setPhotos(prev => prev.filter(entry => entry !== photo))}
                   style={[styles.unpick, { backgroundColor: p.ink }]}>
                   <CloseIcon size={10} color={p.main} />
@@ -132,6 +135,13 @@ export function Composer({ name, running, canStop, canAttach, onSend, onStop, dr
             <ArrowUpIcon size={18} />
           </Pressable>
         </View>
+      {zoom !== null ? (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setZoom(null)} statusBarTranslucent>
+          <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setZoom(null)}>
+            <Image source={{ uri: zoom }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+          </Pressable>
+        </Modal>
+      ) : null}
       </View>
     </View>
   )

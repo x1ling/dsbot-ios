@@ -346,9 +346,21 @@ const type = typeScale
 // Photos the phone is sending, shown from the phone itself until the computer has them.
 function LocalImages({ uris }: { uris: string[] }) {
   const { tile, width } = gridOf(uris.length)
+  const [zoom, setZoom] = useState<string | null>(null)
   return (
     <View style={[styles.grid, { gap: GRID_GAP, marginTop: 6, width }]}>
-      {uris.map(uri => <Image key={uri} source={{ uri }} style={[styles.tile, { width: tile, height: tile, borderWidth: 0 }]} resizeMode="cover" />)}
+      {uris.map(uri => (
+        <Pressable key={uri} accessibilityRole="imagebutton" accessibilityLabel={t('Image')} onPress={() => setZoom(uri)}>
+          <Image source={{ uri }} style={[styles.tile, { width: tile, height: tile, borderWidth: 0 }]} resizeMode="cover" />
+        </Pressable>
+      ))}
+      {zoom !== null ? (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setZoom(null)} statusBarTranslucent>
+          <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setZoom(null)}>
+            <Image source={{ uri: zoom }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+          </Pressable>
+        </Modal>
+      ) : null}
     </View>
   )
 }
