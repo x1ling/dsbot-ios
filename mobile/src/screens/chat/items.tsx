@@ -285,7 +285,7 @@ export const Item = memo(function Item({ item, p, flat, maxWidth, inRoom, sessio
     return (
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 6 }}>
         <View style={{ width: 22, paddingTop: 22 }}>{author ? <Avatar bot={author} dark={dark} size={22} ring={p.main} /> : null}</View>
-        <Pressable onLongPress={longPress} style={{ flexShrink: 1, minWidth: 0, maxWidth, width: wide ? maxWidth : undefined }}>
+        <Pressable onLongPress={bodyTexts.length > 0 ? undefined : longPress} style={{ flexShrink: 1, minWidth: 0, maxWidth, width: wide ? maxWidth : undefined }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3, marginLeft: 2 }}>
             <Text style={[type.caption, { color: author !== undefined ? inkColor(author.color, dark) : p.ink2, fontWeight: '500', flexShrink: 1 }]} numberOfLines={1}>{item.name ?? author?.name ?? ''}</Text>
             {admin ? <Text style={[styles.via, { backgroundColor: p.hover, color: p.ink3 }]}>{t('Admin')}</Text> : null}
@@ -317,7 +317,7 @@ export const Item = memo(function Item({ item, p, flat, maxWidth, inRoom, sessio
   const wide = bodyTexts.some(hasBlockContent) || hasImages
   if (flat) {
     return (
-      <Pressable onLongPress={longPress} style={{ alignSelf: 'stretch', marginVertical: 4 }}>
+      <Pressable onLongPress={bodyTexts.length > 0 ? undefined : longPress} style={{ alignSelf: 'stretch', marginVertical: 4 }}>
         {name}
         {bodyTexts.length > 0 ? <Markdown text={bodyJoined} p={p} textColor={p.ink} bg={p.main} sessionId={rowSessionId} botId={authorBotId} /> : null}
         {hasImages ? <ImageGrid refs={item.imageRefs!} sessionId={rowSessionId!} p={p} /> : null}
@@ -328,7 +328,7 @@ export const Item = memo(function Item({ item, p, flat, maxWidth, inRoom, sessio
     )
   }
   return (
-    <Pressable onLongPress={longPress} style={{ alignSelf: 'flex-start', maxWidth, width: wide ? maxWidth : undefined }}>
+    <Pressable onLongPress={bodyTexts.length > 0 ? undefined : longPress} style={{ alignSelf: 'flex-start', maxWidth, width: wide ? maxWidth : undefined }}>
       {name}
       <View style={[styles.bubble, { backgroundColor: p.bubble, maxWidth: '100%' }]}>
         {bodyTexts.length > 0 ? <Markdown text={bodyJoined} p={p} textColor={p.ink} bg={p.bubble} sessionId={rowSessionId} botId={authorBotId} /> : null}
