@@ -244,7 +244,7 @@ export const Item = memo(function Item({ item, p, flat, maxWidth, inRoom, sessio
     // Photos with no text show as photos, without a bubble around them.
     const photosOnly = (item.text ?? '') === '' && chips.length === 0 && ((item.imageRefs?.length ?? 0) > 0 || (item.localImages?.length ?? 0) > 0)
     const bubble = (
-      <Pressable onLongPress={longPress} onPress={item.local === 'failed' && item.localId !== undefined ? () => onRetry?.(item.localId!) : undefined}
+      <Pressable onLongPress={(item.text ?? '') === '' ? longPress : undefined} onPress={item.local === 'failed' && item.localId !== undefined ? () => onRetry?.(item.localId!) : undefined}
         style={[styles.bubble, styles.userBubble, { backgroundColor: p.user, maxWidth, width: wide ? maxWidth : undefined, opacity: item.local === 'sending' ? 0.7 : 1 },
           photosOnly ? { backgroundColor: 'transparent', paddingHorizontal: 0, paddingVertical: 0 } : null]}>
         {item.text ? <Markdown text={item.text} p={p} textColor={p.userInk} bg={p.user} sessionId={rowSessionId} botId={authorBotId} /> : null}

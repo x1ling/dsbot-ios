@@ -133,7 +133,7 @@ export function Providers({ navigation }: any) {
   return (
     <Screen>
       <Back title={t('Model providers')} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         {view?.available === false ? <Text style={[typeScale.small, { color: p.ink3, margin: 18 }]}>{t('This DSH cannot set up model providers.')}</Text> : null}
         {error ? <Text style={[typeScale.small, { color: p.danger, margin: 18 }]}>{error}</Text> : null}
         {view === null && loadError !== null ? (
@@ -344,7 +344,7 @@ export function Connectors({ navigation, route }: any) {
 
   return (
     <Screen><Back title={t('Connectors')} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         {error ? <Text style={[typeScale.small, { color: p.danger, margin: 18 }]}>{error}</Text> : null}
         <Section label={t('Connectors')}>
           {connectors.map(item => {
@@ -552,7 +552,7 @@ export function Capabilities({ navigation }: any) {
   const mapText = (map?: Record<string, string>) => (map && Object.keys(map).length > 0 ? JSON.stringify(map, null, 2) : '')
   return (
     <Screen><Back title={t('Capabilities')} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         {error ? <Text style={[typeScale.small, { color: p.danger, margin: 18 }]}>{error}</Text> : null}
         <Section label={t('Capabilities')}>
           {items.map(item => {
@@ -676,7 +676,7 @@ export function TeamUsage({ navigation }: any) {
   const models = (view?.models ?? []).map((model, index) => ({ model, total: sum(row => row[2] === index) })).filter(entry => entry.total.input + entry.total.output > 0)
   return (
     <Screen><Back title={t('Usage')} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         <Section label={t('Usage')}>
           <Row label={t('Tokens in')} value={view === null ? '—' : fmt(all.input)} />
           <Row label={t('Tokens out')} value={view === null ? '—' : fmt(all.output)} />
@@ -702,7 +702,7 @@ export function Location({ navigation }: any) {
   const dataPath = (team as { dataPath?: string } | null)?.dataPath
   return (
     <Screen><Back title={t('Location')} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         <Section label={t('Location')}>
           <Row label={t('Team workspace')} value={workspace} onPress={() => navigation.navigate('Folder', { current: workspace, onPick: 'team' })} />
           {dataPath !== undefined ? <Row label={t('Data location')} value={dataPath} /> : null}
@@ -753,7 +753,7 @@ export function Updates({ navigation }: any) {
   const clearDiag = () => { void call('diagnostics-clear').catch(() => {}) }
   return (
     <Screen><Back title={t('Updates & diagnostics')} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         <Section label={t('DS Bot')}>
           <Row label={update?.current ? `DS Bot ${update.current}` : t('DS Bot')} value={updateText(update)} />
           {update?.notes ? <Row label={t('What is new')} value={update.notes} /> : null}
@@ -798,7 +798,7 @@ export function About({ navigation }: any) {
   const appVersion = require('expo-constants').default.expoConfig?.version ?? require('expo-constants').default.manifest?.version ?? '—'
   return (
     <Screen><Back title={t('About')} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         <Section label={t('About')}>
           <Row label={t('DS Bot')} value={version} />
           {dsh !== undefined ? <Row label={t('DSH')} value={dsh} /> : null}
@@ -873,7 +873,7 @@ export function Plugins({ navigation }: any) {
   }
   return (
     <Screen><Back title={t('Plugins')} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         {error ? <Text style={[typeScale.small, { color: p.danger, margin: 18 }]}>{error}</Text> : null}
         {items === null && error === null ? <Text style={[typeScale.small, { color: p.ink3, margin: 18 }]}>{t('Loading…')}</Text> : null}
         {items !== null && items.length === 0 ? <Text style={[typeScale.small, { color: p.ink3, margin: 18 }]}>{t('No plugins installed')}</Text> : null}

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { BackHandler, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native'
+import { BackHandler, Keyboard, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated'
 import { ErrorBoundary } from '../ui/error-boundary.tsx'
@@ -41,7 +41,7 @@ export function Drawer({ width, edgeEnabled = true, backOpens = true, content, c
     }
   }, [reduced, x])
 
-  const open = useCallback(() => snapTo(0), [snapTo])
+  const open = useCallback(() => { Keyboard.dismiss(); snapTo(0) }, [snapTo])
   const close = useCallback(() => snapTo(-width), [snapTo, width])
 
   useEffect(() => {
